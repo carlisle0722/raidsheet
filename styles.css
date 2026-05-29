@@ -57,6 +57,7 @@ button:disabled {
 .section-heading,
 .top-actions,
 .dialog-heading,
+.dialog-heading-actions,
 .dialog-actions {
   display: flex;
   gap: 14px;
@@ -134,6 +135,23 @@ h3 {
 }
 
 .small-button.danger {
+  background: var(--danger);
+}
+
+.remove-character-button {
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(180, 59, 69, 0.22);
+  border-radius: 999px;
+  color: var(--danger);
+  background: rgba(180, 59, 69, 0.08);
+  font-size: 1.15rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.remove-character-button:hover {
+  color: #fff;
   background: var(--danger);
 }
 
@@ -343,6 +361,10 @@ h3 {
   gap: 6px;
 }
 
+.assignment-list .character-actions {
+  align-items: center;
+}
+
 .owner-select,
 .account-row input {
   width: 100%;
@@ -460,17 +482,22 @@ h3 {
   .topbar,
   .section-heading,
   .dialog-heading,
+  .dialog-heading-actions,
   .dialog-actions {
     align-items: flex-start;
     flex-direction: column;
   }
 
-  .top-actions {
+  .top-actions,
+  .dialog-heading-actions {
     width: 100%;
   }
 
-  .top-actions button {
+  .top-actions button,
+  .dialog-heading-actions button,
+  .dialog-heading-actions .status {
     flex: 1;
+    width: 100%;
   }
 
   h1 {

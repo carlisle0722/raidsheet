@@ -252,8 +252,9 @@ function createCharacterCard(character, mode, assignedOwner = "") {
 
     const removeButton = document.createElement("button");
     removeButton.type = "button";
-    removeButton.className = "small-button danger";
-    removeButton.textContent = "제외";
+    removeButton.className = "remove-character-button";
+    removeButton.setAttribute("aria-label", `${character.characterName} 제외`);
+    removeButton.textContent = "×";
     removeButton.addEventListener("click", () => removeAssignment(character.key));
 
     actions.replaceChildren(ownerSelect, removeButton);

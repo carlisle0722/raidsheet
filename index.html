@@ -16,7 +16,6 @@
         <div class="top-actions">
           <button id="edit-accounts-button" class="secondary-button" type="button">계정 편집</button>
           <button id="open-roster-button" class="secondary-button" type="button">캐릭터 추가</button>
-          <button id="refresh-button" class="primary-button" type="button">재조회</button>
         </div>
       </header>
 
@@ -45,7 +44,6 @@
             <p class="eyebrow">Party Plan</p>
             <h2 id="planner-title">실제 레이드 편성</h2>
           </div>
-          <div id="status" class="status" role="status" aria-live="polite">대기 중</div>
         </div>
         <div id="assignment-board" class="assignment-board"></div>
       </section>
@@ -76,7 +74,11 @@
             <p class="eyebrow">Roster Pool</p>
             <h2>1700 이상 조회 캐릭터</h2>
           </div>
-          <button class="icon-button" value="cancel" type="submit" aria-label="닫기">×</button>
+          <div class="dialog-heading-actions">
+            <div id="status" class="status" role="status" aria-live="polite">대기 중</div>
+            <button id="refresh-button" class="primary-button" type="button">재조회</button>
+            <button class="icon-button" value="cancel" type="submit" aria-label="닫기">×</button>
+          </div>
         </div>
         <div class="hint">캐릭터를 선택하면 레이드 편성표에 추가됩니다.</div>
         <div id="roster-board" class="roster-board" aria-live="polite"></div>
