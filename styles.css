@@ -302,11 +302,6 @@ h3 {
   background: var(--surface);
 }
 
-.character-card.is-assigned {
-  grid-template-columns: minmax(0, 1fr) auto 32px;
-  min-height: 64px;
-}
-
 .character-card[data-tier="ancient"] {
   border-left-color: var(--tier-red);
 }
@@ -372,20 +367,18 @@ h3 {
 }
 
 .assignment-list .character-actions {
-  grid-column: 3;
-  grid-row: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: block;
 }
 
 .assignment-list .character-card {
-  align-items: center;
+  padding-right: 46px;
 }
 
 .owner-select,
-.account-row input,
-.account-row select {
+.account-row input {
   width: 100%;
   min-height: 32px;
   border: 1px solid var(--line);
@@ -567,7 +560,6 @@ h3 {
     padding: 12px;
   }
 }
-
 .raid-guide-section {
   margin-bottom: 14px;
   padding: 18px;
@@ -577,93 +569,83 @@ h3 {
   box-shadow: var(--shadow);
 }
 
-.raid-guide-table {
-  overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface);
-}
-
-.raid-guide-row {
+.raid-guide-list {
   display: grid;
-  grid-template-columns: 92px minmax(360px, 1fr) 180px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.raid-guide-card {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr);
+  gap: 12px;
   align-items: center;
-  min-height: 48px;
-  border-left: 7px solid var(--tier-gray);
-  border-bottom: 1px solid var(--line);
-}
-
-.raid-guide-row:last-child {
-  border-bottom: 0;
-}
-
-.raid-guide-head {
-  min-height: 42px;
-  border-left-color: var(--accent);
-  color: #fff;
-  background: var(--accent);
-  font-size: 0.84rem;
-  font-weight: 900;
-}
-
-.raid-guide-row > * {
-  padding: 10px 14px;
-}
-
-.raid-guide-row strong {
-  font-size: 1.05rem;
-  font-weight: 950;
-  white-space: nowrap;
-}
-
-.raid-guide-row p {
-  font-size: 0.98rem;
-  font-weight: 850;
-  line-height: 1.35;
-}
-
-.raid-guide-row em {
-  color: var(--accent-strong);
-  font-size: 0.92rem;
-  font-style: normal;
-  font-weight: 900;
-}
-
-.raid-guide-row[data-tier="ancient"] {
-  border-left-color: var(--tier-red);
-}
-
-.raid-guide-row[data-tier="red"] {
-  border-left-color: var(--tier-gold);
-}
-
-.raid-guide-row[data-tier="green"] {
-  border-left-color: var(--tier-green);
-}
-
-.raid-guide-row[data-tier="blue"] {
-  border-left-color: var(--tier-blue);
-}
-
-.raid-guide-row[data-tier="gray"] {
-  border-left-color: var(--tier-gray);
-}
-
-.raid-guide-row[data-tier="low"] {
-  border-left-color: var(--line-strong);
-}
-
-.raid-guide-row:nth-child(odd):not(.raid-guide-head) {
+  min-height: 82px;
+  padding: 12px 14px;
+  border-left: 6px solid var(--tier-gray);
+  border-radius: 8px;
   background: var(--surface-soft);
 }
 
-@media (max-width: 860px) {
-  .raid-guide-table {
-    overflow-x: auto;
+.raid-guide-card[data-tier="ancient"] {
+  border-left-color: var(--tier-red);
+}
+
+.raid-guide-card[data-tier="red"] {
+  border-left-color: var(--tier-gold);
+}
+
+.raid-guide-card[data-tier="green"] {
+  border-left-color: var(--tier-green);
+}
+
+.raid-guide-card[data-tier="blue"] {
+  border-left-color: var(--tier-blue);
+}
+
+.raid-guide-card[data-tier="gray"] {
+  border-left-color: var(--tier-gray);
+}
+
+.raid-guide-card[data-tier="low"] {
+  border-left-color: var(--line-strong);
+}
+
+.raid-guide-card > strong {
+  font-size: 1rem;
+  white-space: nowrap;
+}
+
+.raid-guide-card p {
+  font-size: 0.94rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.raid-guide-card span {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+@media (max-width: 1180px) {
+  .raid-guide-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .raid-guide-section {
+    padding: 12px;
   }
 
-  .raid-guide-row {
-    grid-template-columns: 86px minmax(360px, 1fr) 150px;
-    min-width: 620px;
+  .raid-guide-list {
+    grid-template-columns: 1fr;
+  }
+
+  .raid-guide-card {
+    grid-template-columns: 78px minmax(0, 1fr);
   }
 }
