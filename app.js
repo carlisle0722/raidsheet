@@ -548,7 +548,7 @@ function getLevelTier(level) {
   if (level >= 1740) return "red";
   if (level >= 1730) return "green";
   if (level >= 1720) return "blue";
-  if (level >= 1710) return "gray";
+  if (level >= 1710) return "low";
   return "low";
 }
 

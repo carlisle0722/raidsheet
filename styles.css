@@ -345,11 +345,11 @@ h3:has(.owner-avatar) {
 }
 
 .character-card[data-tier="gray"] {
-  border-inline-color: var(--tier-purple);
+  border-inline-color: var(--line-strong);
 }
 
 .character-card[data-tier="low"] {
-  border-inline-color: var(--line-strong);
+  border-inline-color: var(--tier-purple);
 }
 
 .character-main,
@@ -613,33 +613,33 @@ h3:has(.owner-avatar) {
   align-items: center;
   min-height: 82px;
   padding: 12px 14px;
-  border-inline: 6px solid var(--tier-purple);
+  border-left: 6px solid var(--tier-purple);
   border-radius: 8px;
   background: var(--surface-soft);
 }
 
 .raid-guide-card[data-tier="ancient"] {
-  border-inline-color: var(--tier-red);
+  border-left-color: var(--tier-red);
 }
 
 .raid-guide-card[data-tier="red"] {
-  border-inline-color: var(--tier-gold);
+  border-left-color: var(--tier-gold);
 }
 
 .raid-guide-card[data-tier="green"] {
-  border-inline-color: var(--tier-green);
+  border-left-color: var(--tier-green);
 }
 
 .raid-guide-card[data-tier="blue"] {
-  border-inline-color: var(--tier-blue);
+  border-left-color: var(--tier-blue);
 }
 
 .raid-guide-card[data-tier="gray"] {
-  border-inline-color: var(--tier-purple);
+  border-left-color: var(--line-strong);
 }
 
 .raid-guide-card[data-tier="low"] {
-  border-inline-color: var(--line-strong);
+  border-left-color: var(--tier-purple);
 }
 
 .raid-guide-card > strong {
