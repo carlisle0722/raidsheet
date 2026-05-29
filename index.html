@@ -10,77 +10,108 @@
     <main class="app-shell">
       <header class="topbar">
         <div>
-          <p class="eyebrow">Lost Ark Open API</p>
-          <h1>레이드 시트</h1>
+          <p class="eyebrow">Lost Ark Raid Sheet</p>
+          <h1>레이드 편성표</h1>
         </div>
-        <button id="refresh-button" class="primary-button" type="button">
-          재조회
-        </button>
+        <div class="top-actions">
+          <button id="edit-accounts-button" class="secondary-button" type="button">계정 편집</button>
+          <button id="refresh-button" class="primary-button" type="button">재조회</button>
+        </div>
       </header>
 
-      <nav class="tabs" aria-label="시트 탭">
-        <button class="tab is-active" type="button">캐릭터 현황</button>
-        <button class="tab" type="button" disabled>레이드 배치</button>
-        <button class="tab" type="button" disabled>누락 확인</button>
-      </nav>
-
-      <section class="summary-strip" aria-label="조회 요약">
+      <section class="summary-strip" aria-label="요약">
         <div class="summary-item">
-          <span>서버</span>
-          <strong id="server-label">카단</strong>
+          <span>표시 기준</span>
+          <strong id="level-label">Lv.1700+</strong>
         </div>
         <div class="summary-item">
-          <span>조회 대상</span>
-          <strong id="member-count">5명</strong>
+          <span>사람</span>
+          <strong id="owner-count">-</strong>
         </div>
         <div class="summary-item">
-          <span>카단 캐릭터</span>
+          <span>조회 캐릭터</span>
           <strong id="character-total">-</strong>
         </div>
         <div class="summary-item">
-          <span>최고 레벨</span>
-          <strong id="highest-level">-</strong>
+          <span>편성 캐릭터</span>
+          <strong id="assigned-total">-</strong>
         </div>
       </section>
 
-      <section class="board-section" aria-labelledby="board-title">
+      <section class="planner-section" aria-labelledby="planner-title">
         <div class="section-heading">
           <div>
-            <p class="eyebrow">Roster</p>
-            <h2 id="board-title">캐릭터 현황</h2>
+            <p class="eyebrow">Party Plan</p>
+            <h2 id="planner-title">실제 레이드 편성</h2>
           </div>
-          <div id="status" class="status" role="status" aria-live="polite">
-            자동 조회 대기
-          </div>
+          <div id="status" class="status" role="status" aria-live="polite">대기 중</div>
         </div>
+        <div id="assignment-board" class="assignment-board"></div>
+      </section>
 
+      <section class="lookup-section" aria-labelledby="lookup-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Roster Pool</p>
+            <h2 id="lookup-title">1700 이상 조회 캐릭터</h2>
+          </div>
+          <div class="hint">캐릭터를 선택하면 위 편성표에 추가됩니다.</div>
+        </div>
         <div id="roster-board" class="roster-board" aria-live="polite"></div>
       </section>
     </main>
 
-    <template id="member-column-template">
-      <article class="member-column">
-        <div class="member-heading">
+    <dialog id="accounts-dialog" class="accounts-dialog">
+      <form method="dialog" class="dialog-panel">
+        <div class="dialog-heading">
+          <div>
+            <p class="eyebrow">Accounts</p>
+            <h2>조회 계정 편집</h2>
+          </div>
+          <button class="icon-button" value="cancel" type="submit" aria-label="닫기">×</button>
+        </div>
+        <div id="account-editor" class="account-editor"></div>
+        <div class="dialog-actions">
+          <button id="add-account-button" class="secondary-button" type="button">계정 추가</button>
+          <button id="save-accounts-button" class="primary-button" value="default" type="button">저장</button>
+        </div>
+      </form>
+    </dialog>
+
+    <template id="owner-column-template">
+      <article class="owner-column">
+        <div class="owner-heading">
+          <h3></h3>
+          <strong class="owner-count">0</strong>
+        </div>
+        <div class="assignment-list"></div>
+      </article>
+    </template>
+
+    <template id="source-column-template">
+      <article class="source-column">
+        <div class="source-heading">
           <div>
             <h3></h3>
-            <span class="query-name"></span>
+            <span class="source-meta"></span>
           </div>
-          <strong class="member-count">-</strong>
+          <strong class="source-count">0</strong>
         </div>
         <div class="character-list"></div>
       </article>
     </template>
 
-    <template id="character-row-template">
-      <div class="character-row">
+    <template id="character-card-template">
+      <div class="character-card">
         <div class="character-main">
           <strong class="character-name"></strong>
           <span class="class-name"></span>
         </div>
         <div class="character-meta">
-          <span class="combat-level"></span>
+          <span class="source-owner"></span>
           <strong class="item-level"></strong>
         </div>
+        <div class="character-actions"></div>
       </div>
     </template>
 
