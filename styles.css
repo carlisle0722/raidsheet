@@ -209,50 +209,45 @@ h3:has(.owner-avatar) {
 
 .workspace-tabs {
   display: grid;
-  gap: 12px;
+  gap: 0;
 }
 
 .tab-list {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
   width: 100%;
-  gap: 8px;
-  padding: 8px;
+  max-width: 100%;
+  gap: 6px;
+  padding: 10px 12px 0;
   border: 1px solid var(--line);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.72);
-  box-shadow: 0 12px 30px rgba(24, 31, 42, 0.06);
+  border-bottom: 0;
+  border-radius: 10px 10px 0 0;
+  background: var(--surface);
+  overflow-x: auto;
 }
 
 .tab-button {
-  position: relative;
-  min-height: 46px;
+  min-height: 42px;
   border: 1px solid transparent;
-  border-radius: 10px;
+  border-bottom: 0;
+  border-radius: 9px 9px 0 0;
   padding: 0 18px;
   color: var(--muted);
   background: transparent;
   font-weight: 900;
   white-space: nowrap;
-  transition:
-    color 0.16s ease,
-    background 0.16s ease,
-    border-color 0.16s ease,
-    box-shadow 0.16s ease,
-    transform 0.16s ease;
 }
 
 .tab-button:hover,
 .tab-button:focus-visible {
   color: var(--accent-strong);
-  background: rgba(47, 111, 106, 0.08);
+  background: var(--surface-soft);
 }
 
 .tab-button.is-active {
   color: var(--accent-strong);
-  border-color: rgba(47, 111, 106, 0.2);
-  background: #fff;
-  box-shadow: 0 8px 20px rgba(24, 31, 42, 0.08);
+  border-color: var(--line);
+  background: var(--surface-soft);
+  box-shadow: none;
 }
 
 .tab-button.is-active::after {
@@ -282,13 +277,23 @@ h3:has(.owner-avatar) {
 
 .planner-section {
   padding: 18px;
+  border-radius: 0 0 10px 10px;
   box-shadow: var(--shadow);
 }
 
 .raid-planner-section {
   padding: 18px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 0 0 10px 10px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.empty-section {
+  min-height: 260px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 0 0 10px 10px;
   background: var(--surface);
   box-shadow: var(--shadow);
 }
@@ -675,15 +680,6 @@ h3:has(.owner-avatar) {
   background: var(--surface-soft);
   font-weight: 800;
   text-align: center;
-}
-
-.empty-section {
-  min-height: 260px;
-  padding: 18px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface);
-  box-shadow: var(--shadow);
 }
 
 .empty-state {
