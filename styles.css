@@ -302,9 +302,14 @@ h3 {
   background: var(--surface);
 }
 
+.character-card.is-summary,
 .character-card.is-assigned {
   grid-template-columns: minmax(0, 1fr) auto 32px;
   min-height: 64px;
+}
+
+.character-card.is-summary {
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 
 .character-card[data-tier="ancient"] {
@@ -379,7 +384,16 @@ h3 {
   justify-content: center;
 }
 
-.assignment-list .character-card {
+.assigned-roster-board .character-actions {
+  grid-column: 3;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.assignment-list .character-card,
+.assigned-roster-board .character-card {
   align-items: center;
 }
 

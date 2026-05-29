@@ -37,6 +37,7 @@ const elements = {
   status: document.querySelector("#status"),
   assignmentBoard: document.querySelector("#assignment-board"),
   rosterBoard: document.querySelector("#roster-board"),
+  assignedRosterBoard: document.querySelector("#assigned-roster-board"),
   ownerCount: document.querySelector("#owner-count"),
   characterTotal: document.querySelector("#character-total"),
   assignedTotal: document.querySelector("#assigned-total"),
@@ -151,7 +152,7 @@ function renderAssignmentBoard() {
       return column;
     }
 
-    list.replaceChildren(...assigned.map((character) => createCharacterCard(character, "assigned", owner)));
+    list.replaceChildren(...assigned.map((character) => createCharacterCard(character, "summary", owner)));
     return column;
   });
 
@@ -160,9 +161,11 @@ function renderAssignmentBoard() {
 
 function renderRosterBoard(isLoading = false) {
   const accountGroups = getAccountGroups();
+  const assignedKeys = new Set(state.assignments.map((assignment) => assignment.key));
 
   if (isLoading && !state.rosters.length) {
     elements.rosterBoard.replaceChildren(...accountGroups.map(createLoadingSourceColumn));
+    elements.assignedRosterBoard.replaceChildren();
     return;
   }
 
@@ -184,9 +187,9 @@ function renderRosterBoard(isLoading = false) {
     }
 
     const failed = rosters.filter((roster) => !roster.ok);
-    const characters = uniqueCharacters(rosters.flatMap((roster) => (roster.ok ? roster.characters : []))).sort(
-      compareCharacters,
-    );
+    const characters = uniqueCharacters(rosters.flatMap((roster) => (roster.ok ? roster.characters : [])))
+      .filter((character) => !assignedKeys.has(character.key))
+      .sort(compareCharacters);
 
     if (failed.length && !characters.length) {
       column.querySelector(".source-count").textContent = "오류";
@@ -221,6 +224,39 @@ function renderRosterBoard(isLoading = false) {
   });
 
   elements.rosterBoard.replaceChildren(...columns);
+  renderAssignedRosterBoard();
+}
+
+function renderAssignedRosterBoard() {
+  const charactersByKey = new Map(getAllCharacters().map((character) => [character.key, character]));
+
+  const columns = getOwners().map((owner) => {
+    const fragment = elements.sourceTemplate.content.cloneNode(true);
+    const column = fragment.querySelector(".source-column");
+    const list = column.querySelector(".character-list");
+    const assigned = state.assignments
+      .filter((assignment) => assignment.owner === owner)
+      .map((assignment) => charactersByKey.get(assignment.key) ?? assignment.character)
+      .filter(Boolean)
+      .sort(compareCharacters);
+
+    column.querySelector("h3").textContent = owner;
+    column.querySelector(".source-meta").textContent = "편성됨";
+    column.querySelector(".source-count").textContent = `${assigned.length}`;
+
+    if (!assigned.length) {
+      const message = document.createElement("p");
+      message.className = "column-message";
+      message.textContent = "편성된 캐릭터 없음";
+      list.replaceChildren(message);
+      return column;
+    }
+
+    list.replaceChildren(...assigned.map((character) => createCharacterCard(character, "assigned", owner)));
+    return column;
+  });
+
+  elements.assignedRosterBoard.replaceChildren(...columns);
 }
 
 function createLoadingSourceColumn(group) {
@@ -233,24 +269,31 @@ function createLoadingSourceColumn(group) {
   return column;
 }
 
-function createCharacterCard(character, mode) {
+function createCharacterCard(character, mode, assignedOwner = "") {
   const fragment = elements.characterTemplate.content.cloneNode(true);
   const card = fragment.querySelector(".character-card");
   const actions = card.querySelector(".character-actions");
   const isAssigned = state.assignments.some((assignment) => assignment.key === character.key);
 
+  card.classList.toggle("is-summary", mode === "summary");
   card.classList.toggle("is-assigned", mode === "assigned");
   card.dataset.tier = getLevelTier(character.itemLevelNumber);
   card.querySelector(".character-name").textContent = character.characterName;
   card.querySelector(".class-name").textContent = character.characterClassName;
-  card.querySelector(".source-owner").textContent = mode === "assigned" ? "" : character.sourceAccountLabel;
+  card.querySelector(".source-owner").textContent =
+    mode === "summary" ? "" : mode === "assigned" ? `편성: ${assignedOwner}` : character.sourceAccountLabel;
   card.querySelector(".item-level").textContent = character.itemAvgLevel;
+
+  if (mode === "summary") {
+    actions.remove();
+    return card;
+  }
 
   if (mode === "assigned") {
     const removeButton = document.createElement("button");
     removeButton.type = "button";
     removeButton.className = "remove-character-button";
-    removeButton.setAttribute("aria-label", `${character.characterName} 제외`);
+    removeButton.setAttribute("aria-label", `${character.characterName} 편성 해제`);
     removeButton.textContent = "×";
     removeButton.addEventListener("click", () => removeAssignment(character.key));
 

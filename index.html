@@ -15,7 +15,7 @@
         </div>
         <div class="top-actions">
           <button id="edit-accounts-button" class="secondary-button" type="button">계정 편집</button>
-          <button id="open-roster-button" class="secondary-button" type="button">캐릭터 추가</button>
+          <button id="open-roster-button" class="secondary-button" type="button">캐릭터 편집</button>
         </div>
       </header>
 
@@ -81,8 +81,26 @@
             <button class="icon-button" value="cancel" type="submit" aria-label="닫기">×</button>
           </div>
         </div>
-        <div class="hint">캐릭터를 선택하면 레이드 편성표에 추가됩니다.</div>
-        <div id="roster-board" class="roster-board" aria-live="polite"></div>
+        <section class="roster-edit-section">
+          <div class="roster-edit-heading">
+            <div>
+              <p class="eyebrow">Available</p>
+              <h3>편성되지 않은 캐릭터</h3>
+            </div>
+            <p class="hint">소속을 선택한 뒤 추가하면 아래 편성된 캐릭터로 이동합니다.</p>
+          </div>
+          <div id="roster-board" class="roster-board" aria-live="polite"></div>
+        </section>
+        <section class="roster-edit-section">
+          <div class="roster-edit-heading">
+            <div>
+              <p class="eyebrow">Assigned</p>
+              <h3>편성된 캐릭터</h3>
+            </div>
+            <p class="hint">×를 누르면 편성이 해제되어 위 목록으로 이동합니다.</p>
+          </div>
+          <div id="assigned-roster-board" class="roster-board assigned-roster-board" aria-live="polite"></div>
+        </section>
       </form>
     </dialog>
 
