@@ -209,31 +209,37 @@ h3:has(.owner-avatar) {
 
 .workspace-tabs {
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .tab-list {
-  display: inline-flex;
-  width: fit-content;
-  max-width: 100%;
-  gap: 4px;
-  padding: 4px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 100%;
+  gap: 8px;
+  padding: 8px;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--surface);
-  box-shadow: 0 10px 28px rgba(24, 31, 42, 0.06);
-  overflow-x: auto;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 12px 30px rgba(24, 31, 42, 0.06);
 }
 
 .tab-button {
-  min-height: 38px;
-  border: 0;
-  border-radius: 6px;
-  padding: 0 16px;
+  position: relative;
+  min-height: 46px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 0 18px;
   color: var(--muted);
   background: transparent;
   font-weight: 900;
   white-space: nowrap;
+  transition:
+    color 0.16s ease,
+    background 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    transform 0.16s ease;
 }
 
 .tab-button:hover,
@@ -243,9 +249,31 @@ h3:has(.owner-avatar) {
 }
 
 .tab-button.is-active {
-  color: #fff;
+  color: var(--accent-strong);
+  border-color: rgba(47, 111, 106, 0.2);
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(24, 31, 42, 0.08);
+}
+
+.tab-button.is-active::after {
+  position: absolute;
+  right: 18px;
+  bottom: 8px;
+  left: 18px;
+  height: 3px;
+  border-radius: 999px;
   background: var(--accent);
-  box-shadow: 0 8px 18px rgba(47, 111, 106, 0.18);
+  content: "";
+}
+
+@media (max-width: 760px) {
+  .tab-list {
+    grid-template-columns: 1fr;
+  }
+
+  .tab-button {
+    justify-content: center;
+  }
 }
 
 .tab-panel[hidden] {
