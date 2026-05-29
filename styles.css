@@ -495,7 +495,7 @@ h3:has(.owner-avatar) {
 
 .account-row {
   display: grid;
-  grid-template-columns: 96px minmax(180px, 1fr) minmax(160px, 0.8fr) auto;
+  grid-template-columns: minmax(180px, 1fr) minmax(160px, 0.8fr) auto;
   gap: 8px;
   align-items: end;
   padding: 10px;
@@ -512,46 +512,6 @@ h3:has(.owner-avatar) {
   font-weight: 800;
 }
 
-.avatar-picker {
-  place-items: center;
-  align-self: stretch;
-  min-height: 92px;
-  padding: 8px;
-  border: 1px dashed var(--line-strong);
-  border-radius: 8px;
-  background: var(--surface);
-  cursor: pointer;
-  text-align: center;
-}
-
-.avatar-upload-state {
-  color: var(--muted);
-  font-size: 0.7rem;
-  font-weight: 800;
-  line-height: 1.2;
-}
-
-.avatar-picker:hover {
-  border-color: rgba(47, 111, 106, 0.46);
-  background: rgba(47, 111, 106, 0.04);
-}
-
-.account-avatar-preview {
-  width: 48px;
-  height: 48px;
-}
-
-.account-avatar-preview:not([src]),
-.account-avatar-preview[src=""] {
-  padding: 12px;
-}
-
-.avatar-picker input[type="file"] {
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  overflow: hidden;
-}
 
 .character-card.is-skeleton {
   border-left-color: var(--line);
@@ -751,6 +711,32 @@ h3:has(.owner-avatar) {
   background: linear-gradient(135deg, rgba(47, 111, 106, 0.12), rgba(240, 206, 134, 0.22)), var(--surface);
   box-shadow: 0 10px 22px rgba(24, 31, 42, 0.14);
   object-fit: cover;
+}
+
+.profile-image-button {
+  display: grid;
+  place-items: center;
+  width: 92px;
+  height: 92px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.profile-image-button:hover .profile-image,
+.profile-image-button:focus-visible .profile-image {
+  border-color: rgba(47, 111, 106, 0.54);
+  box-shadow: 0 12px 26px rgba(47, 111, 106, 0.2);
+}
+
+.profile-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .profile-card strong {

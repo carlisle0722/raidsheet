@@ -139,15 +139,30 @@ function renderProfileBoard() {
     const card = document.createElement("article");
     card.className = "profile-card";
 
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "profile-image-button";
+    button.setAttribute("aria-label", `${owner} 프로필 사진 변경`);
+
     const image = document.createElement("img");
     image.className = "profile-image";
     image.src = getOwnerAvatarUrl(owner);
     image.alt = "";
 
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/png,image/jpeg,image/webp,image/gif";
+    input.className = "profile-file-input";
+    input.addEventListener("click", (event) => event.stopPropagation());
+    input.addEventListener("change", (event) => uploadOwnerProfileImage(owner, image, event.target.files?.[0]));
+
+    button.append(image, input);
+    button.addEventListener("click", () => input.click());
+
     const name = document.createElement("strong");
     name.textContent = owner;
 
-    card.append(image, name);
+    card.append(button, name);
     return card;
   });
 
@@ -371,21 +386,12 @@ function openRosterDialog() {
 function addAccountEditorRow(account = {}) {
   const row = document.createElement("div");
   row.className = "account-row";
-  const avatarUrl = account.avatarUrl ?? defaultAvatars[account.owner] ?? "";
   row.innerHTML = `
-    <label class="avatar-picker">
-      <img class="account-avatar-preview" src="${escapeAttribute(avatarUrl)}" alt="" />
-      <span>\uD504\uB85C\uD544 \uC0AC\uC9C4</span>
-      <small class="avatar-upload-state">\uD074\uB9AD\uD574\uC11C \uC120\uD0DD</small>
-      <input data-field="avatarUrl" type="hidden" value="${escapeAttribute(avatarUrl)}" />
-      <input data-field="avatarFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
-    </label>
-    <label>\uCE90\uB9AD\uD130\uBA85<input data-field="queryName" type="text" value="${escapeAttribute(account.queryName ?? account.label ?? "")}" placeholder="\uB300\uD45C \uCE90\uB9AD\uD130\uBA85" /></label>
-    <label>\uC18C\uC18D<select data-field="owner">${createOwnerOptions(account.owner)}</select></label>
-    <button class="small-button danger" type="button">\uC0AD\uC81C</button>
+    <label>캐릭터명<input data-field="queryName" type="text" value="${escapeAttribute(account.queryName ?? account.label ?? "")}" placeholder="대표 캐릭터명" /></label>
+    <label>소속<select data-field="owner">${createOwnerOptions(account.owner)}</select></label>
+    <button class="small-button danger" type="button">삭제</button>
   `;
   row.querySelector("button").addEventListener("click", () => row.remove());
-  row.querySelector('[data-field="avatarFile"]').addEventListener("change", (event) => uploadProfileImage(row, event.target.files?.[0]));
   elements.accountEditor.append(row);
 }
 
@@ -394,7 +400,8 @@ function saveAccountEditor() {
   const nextAccounts = rows.map((row, index) => {
     const queryName = row.querySelector('[data-field="queryName"]').value.trim();
     const owner = row.querySelector('[data-field="owner"]').value.trim();
-    const avatarUrl = row.querySelector('[data-field="avatarUrl"]').value.trim() || defaultAvatars[owner] || "";
+    const previous = state.accounts.find((account) => account.owner === owner || account.queryName === queryName);
+    const avatarUrl = previous?.avatarUrl || defaultAvatars[owner] || "";
     if (!queryName || !owner) return null;
     return { id: stableAccountId(queryName, queryName, index), label: queryName, queryName, owner, avatarUrl };
   }).filter(Boolean);
@@ -468,48 +475,46 @@ function getOwnerAvatarUrl(owner) {
   return state.accounts.find((account) => account.owner === owner && account.avatarUrl)?.avatarUrl ?? defaultAvatars[owner] ?? "";
 }
 
-async function uploadProfileImage(row, file) {
+async function uploadOwnerProfileImage(owner, preview, file) {
   if (!file) return;
-  const uploadState = row.querySelector(".avatar-upload-state");
-  const setUploadState = (message) => {
-    if (uploadState) uploadState.textContent = message;
-  };
-
   if (!file.type.startsWith("image/")) {
-    setUploadState("\uC774\uBBF8\uC9C0\uB9CC \uAC00\uB2A5");
-    return setStatus("\uC774\uBBF8\uC9C0 \uD30C\uC77C\uB9CC \uC5C5\uB85C\uB4DC\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.", "error");
+    setStatus("이미지 파일만 업로드할 수 있습니다.", "error");
+    return;
   }
   if (file.size > 4 * 1024 * 1024) {
-    setUploadState("4MB \uC774\uD558\uB9CC \uAC00\uB2A5");
-    return setStatus("\uD504\uB85C\uD544 \uC0AC\uC9C4\uC740 4MB \uC774\uD558\uB9CC \uC5C5\uB85C\uB4DC\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.", "error");
+    setStatus("프로필 사진은 4MB 이하만 업로드할 수 있습니다.", "error");
+    return;
   }
 
-  const preview = row.querySelector(".account-avatar-preview");
-  const avatarInput = row.querySelector('[data-field="avatarUrl"]');
+  const dataUrl = await readFileAsDataUrl(file);
+  preview.src = dataUrl;
+  setOwnerAvatarUrl(owner, dataUrl);
+  saveAccounts();
+  await saveSheetState();
+  renderAll();
+  setStatus("프로필 사진이 삽입됐습니다. Blob에 업로드 중...", "loading");
 
   try {
-    const dataUrl = await readFileAsDataUrl(file);
-    preview.src = dataUrl;
-    avatarInput.value = dataUrl;
-    setUploadState("\uC120\uD0DD\uB428");
-    setStatus("\uD504\uB85C\uD544 \uC0AC\uC9C4\uC774 \uC0BD\uC785\uB410\uC2B5\uB2C8\uB2E4. Blob\uC5D0 \uC5C5\uB85C\uB4DC \uC911...", "loading");
-
     const response = await fetch("/api/profile-image", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ fileName: file.name, contentType: file.type, dataUrl }),
     });
     const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error ?? "\uD504\uB85C\uD544 \uC0AC\uC9C4 \uC5C5\uB85C\uB4DC\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4.");
+    if (!response.ok) throw new Error(payload.error ?? "프로필 사진 업로드에 실패했습니다.");
 
-    avatarInput.value = payload.url;
-    preview.src = payload.url;
-    setUploadState("Blob \uC5C5\uB85C\uB4DC \uC644\uB8CC");
-    setStatus("\uD504\uB85C\uD544 \uC0AC\uC9C4 \uC5C5\uB85C\uB4DC \uC644\uB8CC. \uC800\uC7A5\uC744 \uB20C\uB7EC \uBC18\uC601\uD558\uC138\uC694.", "success");
+    setOwnerAvatarUrl(owner, payload.url);
+    saveAccounts();
+    await saveSheetState();
+    renderAll();
+    setStatus("프로필 사진 업로드 완료", "success");
   } catch (error) {
-    setUploadState("\uB85C\uCEEC\uB85C \uC0BD\uC785\uB428");
-    setStatus(`${error.message} \uB300\uC2E0 \uD604\uC7AC \uC120\uD0DD\uD55C \uC774\uBBF8\uC9C0\uB294 \uD654\uBA74\uC5D0 \uC0BD\uC785\uB410\uC2B5\uB2C8\uB2E4.`, "error");
+    setStatus(`${error.message} 현재 선택한 이미지는 화면에 임시로 삽입됐습니다.`, "error");
   }
+}
+
+function setOwnerAvatarUrl(owner, avatarUrl) {
+  state.accounts = state.accounts.map((account) => (account.owner === owner ? { ...account, avatarUrl } : account));
 }
 
 function readFileAsDataUrl(file) {
