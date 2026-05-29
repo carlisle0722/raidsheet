@@ -302,6 +302,11 @@ h3 {
   background: var(--surface);
 }
 
+.character-card.is-assigned {
+  grid-template-columns: minmax(0, 1fr) auto 32px;
+  min-height: 64px;
+}
+
 .character-card[data-tier="ancient"] {
   border-left-color: var(--tier-red);
 }
@@ -367,18 +372,20 @@ h3 {
 }
 
 .assignment-list .character-actions {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  display: block;
+  grid-column: 3;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .assignment-list .character-card {
-  padding-right: 46px;
+  align-items: center;
 }
 
 .owner-select,
-.account-row input {
+.account-row input,
+.account-row select {
   width: 100%;
   min-height: 32px;
   border: 1px solid var(--line);

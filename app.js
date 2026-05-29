@@ -13,6 +13,7 @@ const defaultAccounts = [
   { id: "badeulbageulbadeul", owner: "바들바글바들", queryName: "바들바글바들", label: "바들바글바들" },
   { id: "ddiddu", owner: "디뚜뚜뚜", queryName: "디뚜뚜뚜", label: "디뚜뚜뚜" },
 ];
+const ownerOptions = ["꿀숑", "미느몬", "김삼대", "바들바글바들", "디뚜뚜뚜"];
 
 const state = {
   accounts: loadAccounts(),
@@ -238,6 +239,7 @@ function createCharacterCard(character, mode) {
   const actions = card.querySelector(".character-actions");
   const isAssigned = state.assignments.some((assignment) => assignment.key === character.key);
 
+  card.classList.toggle("is-assigned", mode === "assigned");
   card.dataset.tier = getLevelTier(character.itemLevelNumber);
   card.querySelector(".character-name").textContent = character.characterName;
   card.querySelector(".class-name").textContent = character.characterClassName;
@@ -344,7 +346,7 @@ function addAccountEditorRow(account = {}) {
   row.className = "account-row";
   row.innerHTML = `
     <label>캐릭터명<input data-field="queryName" type="text" value="${escapeAttribute(account.queryName ?? account.label ?? "")}" placeholder="대표 캐릭터명" /></label>
-    <label>소속<input data-field="owner" type="text" value="${escapeAttribute(account.owner ?? "")}" placeholder="편성표 사람 이름" /></label>
+    <label>소속<select data-field="owner">${createOwnerOptions(account.owner)}</select></label>
     <button class="small-button danger" type="button">삭제</button>
   `;
   row.querySelector("button").addEventListener("click", () => row.remove());
@@ -565,6 +567,15 @@ function normalizeAccounts(accounts) {
       };
     })
     .filter(Boolean);
+}
+
+function createOwnerOptions(selectedOwner = "") {
+  return ownerOptions
+    .map((owner) => {
+      const selected = owner === selectedOwner ? " selected" : "";
+      return `<option value="${escapeAttribute(owner)}"${selected}>${owner}</option>`;
+    })
+    .join("");
 }
 
 function normalizeAssignments(assignments) {
