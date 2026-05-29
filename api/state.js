@@ -7,8 +7,12 @@ export default async function handler(req, res) {
   const databaseUrl =
     process.env.DATABASE_URL ??
     process.env.DATABASE_URL_URL ??
+    process.env.DATABASE_URL_DATABASE_URL ??
+    process.env.NEON_DATABASE_URL ??
     process.env.POSTGRES_URL ??
-    process.env.POSTGRES_PRISMA_URL;
+    process.env.POSTGRES_PRISMA_URL ??
+    process.env.POSTGRES_URL_NON_POOLING ??
+    process.env.DATABASE_URL_UNPOOLED;
 
   if (!databaseUrl) {
     sendJson(res, 503, {
