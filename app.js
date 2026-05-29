@@ -26,7 +26,9 @@ const state = {
 const elements = {
   refreshButton: document.querySelector("#refresh-button"),
   editAccountsButton: document.querySelector("#edit-accounts-button"),
+  openRosterButton: document.querySelector("#open-roster-button"),
   accountsDialog: document.querySelector("#accounts-dialog"),
+  rosterDialog: document.querySelector("#roster-dialog"),
   accountEditor: document.querySelector("#account-editor"),
   addAccountButton: document.querySelector("#add-account-button"),
   saveAccountsButton: document.querySelector("#save-accounts-button"),
@@ -43,6 +45,7 @@ const elements = {
 
 elements.refreshButton.addEventListener("click", () => loadRosters({ refresh: true }));
 elements.editAccountsButton.addEventListener("click", openAccountEditor);
+elements.openRosterButton.addEventListener("click", openRosterDialog);
 elements.addAccountButton.addEventListener("click", addAccountEditorRow);
 elements.saveAccountsButton.addEventListener("click", saveAccountEditor);
 
@@ -325,12 +328,15 @@ function openAccountEditor() {
   elements.accountsDialog.showModal();
 }
 
+function openRosterDialog() {
+  elements.rosterDialog.showModal();
+}
+
 function addAccountEditorRow(account = {}) {
   const row = document.createElement("div");
   row.className = "account-row";
   row.innerHTML = `
-    <label>표시명<input data-field="label" type="text" value="${escapeAttribute(account.label ?? "")}" placeholder="꿀숑" /></label>
-    <label>조회 캐릭터<input data-field="queryName" type="text" value="${escapeAttribute(account.queryName ?? "")}" placeholder="대표 캐릭터명" /></label>
+    <label>캐릭터명<input data-field="queryName" type="text" value="${escapeAttribute(account.queryName ?? account.label ?? "")}" placeholder="대표 캐릭터명" /></label>
     <label>소속<input data-field="owner" type="text" value="${escapeAttribute(account.owner ?? "")}" placeholder="편성표 사람 이름" /></label>
     <button class="small-button danger" type="button">삭제</button>
   `;
@@ -342,13 +348,12 @@ function saveAccountEditor() {
   const rows = [...elements.accountEditor.querySelectorAll(".account-row")];
   const nextAccounts = rows
     .map((row, index) => {
-      const label = row.querySelector('[data-field="label"]').value.trim();
       const queryName = row.querySelector('[data-field="queryName"]').value.trim();
       const owner = row.querySelector('[data-field="owner"]').value.trim();
-      if (!label || !queryName || !owner) return null;
+      if (!queryName || !owner) return null;
       return {
-        id: stableAccountId(label, queryName, index),
-        label,
+        id: stableAccountId(queryName, queryName, index),
+        label: queryName,
         queryName,
         owner,
       };
