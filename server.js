@@ -1,13 +1,13 @@
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { existsSync, readFileSync } from "node:fs";
-import { extname, join, normalize } from "node:path";
+import { extname, join, normalize, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import healthHandler from "./api/health.js";
 import rosterHandler from "./api/roster.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
-const publicDir = join(__dirname, "public");
+const publicDir = __dirname;
 
 loadEnvFile(".env");
 loadEnvFile(".env.local");
@@ -54,8 +54,14 @@ async function serveStatic(pathname, res) {
   const safePath = pathname === "/" ? "/index.html" : pathname;
   const requestedPath = normalize(join(publicDir, safePath));
   const publicRoot = normalize(publicDir);
+  const relativePath = relative(publicRoot, requestedPath);
 
-  if (requestedPath !== publicRoot && !requestedPath.startsWith(`${publicRoot}\\`)) {
+  if (safePath.startsWith("/api/") || safePath.startsWith("/.")) {
+    sendText(res, 404, "Not Found");
+    return;
+  }
+
+  if (relativePath.startsWith("..") || relativePath === "..") {
     sendText(res, 403, "Forbidden");
     return;
   }
