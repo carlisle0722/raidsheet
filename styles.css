@@ -400,7 +400,7 @@ h3 {
 }
 
 .roster-dialog {
-  width: min(1280px, calc(100% - 28px));
+  width: min(1760px, calc(100% - 20px));
 }
 
 .accounts-dialog::backdrop,
@@ -415,8 +415,39 @@ h3 {
 }
 
 .roster-dialog-panel {
-  max-height: min(82vh, 860px);
+  max-height: min(92vh, 980px);
   overflow: auto;
+}
+
+.roster-dialog .dialog-panel {
+  padding: 14px;
+}
+
+.roster-dialog .roster-board {
+  grid-template-columns: repeat(5, minmax(180px, 1fr));
+}
+
+.roster-dialog .source-column {
+  min-width: 0;
+}
+
+.roster-dialog .source-heading {
+  min-height: 50px;
+  padding: 10px;
+}
+
+.roster-dialog .character-list {
+  gap: 5px;
+  padding: 6px;
+}
+
+.roster-dialog .character-card {
+  min-height: 64px;
+  padding: 8px;
+}
+
+.roster-dialog .character-actions {
+  gap: 5px;
 }
 
 .account-editor {
@@ -506,6 +537,10 @@ h3 {
 
   .summary-strip,
   .account-row {
+    grid-template-columns: 1fr;
+  }
+
+  .roster-dialog .roster-board {
     grid-template-columns: 1fr;
   }
 

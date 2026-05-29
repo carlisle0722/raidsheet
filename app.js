@@ -25,6 +25,7 @@ const state = {
 
 const elements = {
   refreshButton: document.querySelector("#refresh-button"),
+  saveRosterButton: document.querySelector("#save-roster-button"),
   editAccountsButton: document.querySelector("#edit-accounts-button"),
   openRosterButton: document.querySelector("#open-roster-button"),
   accountsDialog: document.querySelector("#accounts-dialog"),
@@ -44,6 +45,7 @@ const elements = {
 };
 
 elements.refreshButton.addEventListener("click", () => loadRosters({ refresh: true }));
+elements.saveRosterButton.addEventListener("click", saveRosterChanges);
 elements.editAccountsButton.addEventListener("click", openAccountEditor);
 elements.openRosterButton.addEventListener("click", openRosterDialog);
 elements.addAccountButton.addEventListener("click", addAccountEditorRow);
@@ -247,9 +249,6 @@ function createCharacterCard(character, mode, assignedOwner = "") {
   card.querySelector(".item-level").textContent = character.itemAvgLevel;
 
   if (mode === "assigned") {
-    const ownerSelect = createOwnerSelect(assignedOwner);
-    ownerSelect.addEventListener("change", () => moveAssignment(character, ownerSelect.value));
-
     const removeButton = document.createElement("button");
     removeButton.type = "button";
     removeButton.className = "remove-character-button";
@@ -257,7 +256,7 @@ function createCharacterCard(character, mode, assignedOwner = "") {
     removeButton.textContent = "×";
     removeButton.addEventListener("click", () => removeAssignment(character.key));
 
-    actions.replaceChildren(ownerSelect, removeButton);
+    actions.replaceChildren(removeButton);
     return card;
   }
 
@@ -290,7 +289,6 @@ function addAssignment(character, owner) {
     character,
   });
   saveAssignments();
-  saveSheetState();
   renderAll();
 }
 
@@ -300,14 +298,12 @@ function moveAssignment(character, owner) {
   assignment.owner = owner;
   assignment.character = character;
   saveAssignments();
-  saveSheetState();
   renderAll();
 }
 
 function removeAssignment(key) {
   state.assignments = state.assignments.filter((assignment) => assignment.key !== key);
   saveAssignments();
-  saveSheetState();
   renderAll();
 }
 
@@ -317,8 +313,22 @@ function pruneAssignments() {
   state.assignments = state.assignments.filter((assignment) => knownKeys.has(assignment.key));
   if (state.assignments.length !== previousLength) {
     saveAssignments();
-    saveSheetState();
   }
+}
+
+async function saveRosterChanges() {
+  elements.saveRosterButton.disabled = true;
+  setStatus("편성 저장 중", "loading");
+  const ok = await saveSheetState();
+  elements.saveRosterButton.disabled = false;
+
+  if (ok) {
+    const total = getAllCharacters().length;
+    setStatus(`${minItemLevel}+ ${total}명 조회 · 편성 저장 완료`, "success");
+    return;
+  }
+
+  setStatus("편성 저장 실패", "error");
 }
 
 function openAccountEditor() {
@@ -525,8 +535,10 @@ async function saveSheetState() {
     });
 
     state.isRemoteReady = response.ok;
+    return response.ok;
   } catch {
     state.isRemoteReady = false;
+    return false;
   }
 }
 
