@@ -30,6 +30,21 @@
         <div id="profile-board" class="profile-board"></div>
       </section>
 
+      <section class="raid-guide-section" aria-labelledby="raid-guide-title">
+        <div class="section-heading">
+          <div><p class="eyebrow">Gold Raid Guide</p><h2 id="raid-guide-title">레벨별 레이드</h2></div>
+          <p class="hint">골드 기준 · 추가 레이드 참고</p>
+        </div>
+        <div class="raid-guide-list">
+          <article class="raid-guide-card" data-tier="ancient"><strong>Lv.1750+</strong><div><p>세르카 나메 · 종막 하드 · 강습 3관문</p><span>추가: 4막 하드</span></div></article>
+          <article class="raid-guide-card" data-tier="red"><strong>Lv.1740+</strong><div><p>세르카 나메 · 종막 하드 · 4막 하드</p><span>추가: 강습 2관문</span></div></article>
+          <article class="raid-guide-card" data-tier="green"><strong>Lv.1730+</strong><div><p>세르카 하드 · 종막 하드 · 4막 하드</p><span>추가: 강습 2관문</span></div></article>
+          <article class="raid-guide-card" data-tier="blue"><strong>Lv.1720+</strong><div><p>4막 하드 · 강습 2관문 · 종막 노말</p><span>추가: 세르카  노말</span></div></article>
+          <article class="raid-guide-card" data-tier="low"><strong>Lv.1710+</strong><div><p>세르카 노말 · 종막 노말 · 4막 노말</p><span>추가: 강습 1관문</span></div></article>
+          <article class="raid-guide-card" data-tier="base"><strong>Lv.1700+</strong><div><p>4막 노말 · 강습 1관문 · 3막 하드</p><span>추가: 없음</span></div></article>
+        </div>
+      </section>
+
       <section class="workspace-tabs" aria-label="시트 보기">
         <div class="tab-list" role="tablist" aria-label="레이드 시트 탭">
           <button id="owned-tab" class="tab-button is-active" type="button" role="tab" aria-selected="true" aria-controls="owned-panel" data-tab-target="owned-panel">보유 캐릭터</button>
@@ -45,19 +60,9 @@
         </div>
 
         <div id="raid-panel" class="tab-panel" role="tabpanel" aria-labelledby="raid-tab" hidden>
-          <section class="raid-guide-section" aria-labelledby="raid-guide-title">
-            <div class="section-heading">
-              <div><p class="eyebrow">Gold Raid Guide</p><h2 id="raid-guide-title">레벨별 레이드</h2></div>
-              <p class="hint">골드 기준 · 추가 레이드 참고</p>
-            </div>
-            <div class="raid-guide-list">
-              <article class="raid-guide-card" data-tier="ancient"><strong>Lv.1750+</strong><div><p>세르카 나메 · 종막 하드 · 강습 3관문</p><span>추가: 4막 하드</span></div></article>
-              <article class="raid-guide-card" data-tier="red"><strong>Lv.1740+</strong><div><p>세르카 나메 · 종막 하드 · 4막 하드</p><span>추가: 강습 2관문</span></div></article>
-              <article class="raid-guide-card" data-tier="green"><strong>Lv.1730+</strong><div><p>세르카 하드 · 종막 하드 · 4막 하드</p><span>추가: 강습 2관문</span></div></article>
-              <article class="raid-guide-card" data-tier="blue"><strong>Lv.1720+</strong><div><p>4막 하드 · 강습 2관문 · 종막 노말</p><span>추가: 세르카  노말</span></div></article>
-              <article class="raid-guide-card" data-tier="low"><strong>Lv.1710+</strong><div><p>세르카 노말 · 종막 노말 · 4막 노말</p><span>추가: 강습 1관문</span></div></article>
-              <article class="raid-guide-card" data-tier="base"><strong>Lv.1700+</strong><div><p>4막 노말 · 강습 1관문 · 3막 하드</p><span>추가: 없음</span></div></article>
-            </div>
+          <section class="empty-section" aria-labelledby="raid-title">
+            <div class="section-heading"><div><p class="eyebrow">Raid Assignment</p><h2 id="raid-title">레이드 편성</h2></div></div>
+            <div class="empty-state">아직 표시할 레이드 편성이 없습니다.</div>
           </section>
         </div>
 
