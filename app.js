@@ -280,8 +280,6 @@ function createCharacterCard(character, mode, assignedOwner = "") {
   card.dataset.tier = getLevelTier(character.itemLevelNumber);
   card.querySelector(".character-name").textContent = character.characterName;
   card.querySelector(".class-name").textContent = character.characterClassName;
-  card.querySelector(".source-owner").textContent =
-    mode === "summary" ? "" : mode === "assigned" ? `편성: ${assignedOwner}` : character.sourceAccountLabel;
   card.querySelector(".item-level").textContent = character.itemAvgLevel;
 
   if (mode === "summary") {
