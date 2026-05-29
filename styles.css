@@ -581,3 +581,93 @@ h3 {
     padding: 12px;
   }
 }
+
+.raid-guide-section {
+  margin-bottom: 14px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.raid-guide-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.raid-guide-card {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  min-height: 82px;
+  padding: 12px 14px;
+  border-left: 6px solid var(--tier-gray);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.raid-guide-card[data-tier="ancient"] {
+  border-left-color: var(--tier-red);
+}
+
+.raid-guide-card[data-tier="red"] {
+  border-left-color: var(--tier-gold);
+}
+
+.raid-guide-card[data-tier="green"] {
+  border-left-color: var(--tier-green);
+}
+
+.raid-guide-card[data-tier="blue"] {
+  border-left-color: var(--tier-blue);
+}
+
+.raid-guide-card[data-tier="gray"] {
+  border-left-color: var(--tier-gray);
+}
+
+.raid-guide-card[data-tier="low"] {
+  border-left-color: var(--line-strong);
+}
+
+.raid-guide-card > strong {
+  font-size: 1rem;
+  white-space: nowrap;
+}
+
+.raid-guide-card p {
+  font-size: 0.94rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.raid-guide-card span {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+@media (max-width: 1180px) {
+  .raid-guide-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .raid-guide-section {
+    padding: 12px;
+  }
+
+  .raid-guide-list {
+    grid-template-columns: 1fr;
+  }
+
+  .raid-guide-card {
+    grid-template-columns: 78px minmax(0, 1fr);
+  }
+}
