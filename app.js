@@ -586,13 +586,14 @@ async function loadSheetState() {
     const payload = await response.json();
     const remoteAccounts = normalizeAccounts(payload.accounts);
     const remoteAssignments = normalizeAssignments(payload.assignments);
-    state.accounts = remoteAccounts.length ? mergeDefaultAvatars(remoteAccounts) : state.accounts;
+    const nextAccounts = remoteAccounts.length ? mergeAccountLists(remoteAccounts, state.accounts) : state.accounts;
+    state.accounts = mergeDefaultAvatars(nextAccounts);
     if (Array.isArray(payload.assignments)) state.assignments = remoteAssignments;
     state.isRemoteReady = true;
     saveAccounts();
     saveAssignments();
     renderAll();
-    if (!payload.exists) saveSheetState();
+    if (!payload.exists || nextAccounts.length !== remoteAccounts.length) saveSheetState();
   } catch {
     state.isRemoteReady = false;
   }
@@ -654,8 +655,21 @@ function normalizeAssignments(assignments) {
 }
 
 function mergeDefaultAvatars(accounts) {
-  const byOwner = new Map(accounts.map((account) => [account.owner, account]));
-  return defaultAccounts.map((defaultAccount) => ({ ...defaultAccount, ...(byOwner.get(defaultAccount.owner) ?? {}) }));
+  return mergeAccountLists(accounts, defaultAccounts).map((account) => ({
+    ...account,
+    avatarUrl: account.avatarUrl || defaultAvatars[account.owner] || "",
+  }));
+}
+
+function mergeAccountLists(primaryAccounts, fallbackAccounts = []) {
+  const accountsByIdentity = new Map();
+
+  for (const account of [...fallbackAccounts, ...primaryAccounts]) {
+    const key = `${account.owner}:${account.queryName}`;
+    accountsByIdentity.set(key, account);
+  }
+
+  return Array.from(accountsByIdentity.values());
 }
 
 function stableAccountId(label, queryName, index) {
