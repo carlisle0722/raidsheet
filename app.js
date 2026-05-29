@@ -1,19 +1,34 @@
 const minItemLevel = 1700;
 const storageKeys = {
-  accounts: "raidsheet:accounts:v3",
-  legacyAccounts: "raidsheet:accounts:v2",
+  accounts: "raidsheet:accounts:v4",
+  legacyAccounts: "raidsheet:accounts:v3",
   assignments: "raidsheet:assignments:v2",
 };
 
+const names = {
+  kkul: "\uAFC0\uC211",
+  mineumon: "\uBBF8\uB290\uBAAC",
+  kimsamdae: "\uAE40\uC0BC\uB300",
+  badeulbageulbadeul: "\uBC14\uB4E4\uBC14\uAE00\uBC14\uB4E4",
+  ddiddu: "\uB514\uB69C\uB69C\uB69C\uC57C",
+};
+
+const defaultAvatars = {
+  [names.kkul]: "/assets/profiles/kkul.png",
+  [names.mineumon]: "/assets/profiles/mineumon.png",
+  [names.kimsamdae]: "/assets/profiles/kimsamdae.png",
+  [names.badeulbageulbadeul]: "/assets/profiles/badeulbageulbadeul.png",
+  [names.ddiddu]: "/assets/profiles/ddiddu.png",
+};
+
 const defaultAccounts = [
-  { id: "kkul", owner: "꿀숑", queryName: "꿀숑", label: "꿀숑" },
-  { id: "bluesong", owner: "꿀숑", queryName: "블숑몬", label: "블숑몬" },
-  { id: "mineumon", owner: "미느몬", queryName: "미느몬", label: "미느몬" },
-  { id: "kimsamdae", owner: "김삼대", queryName: "김삼대", label: "김삼대" },
-  { id: "badeulbageulbadeul", owner: "바들바글바들", queryName: "바들바글바들", label: "바들바글바들" },
-  { id: "ddiddu", owner: "디뚜뚜뚜", queryName: "디뚜뚜뚜", label: "디뚜뚜뚜" },
+  { id: "kkul", owner: names.kkul, queryName: names.kkul, label: names.kkul, avatarUrl: defaultAvatars[names.kkul] },
+  { id: "mineumon", owner: names.mineumon, queryName: names.mineumon, label: names.mineumon, avatarUrl: defaultAvatars[names.mineumon] },
+  { id: "kimsamdae", owner: names.kimsamdae, queryName: names.kimsamdae, label: names.kimsamdae, avatarUrl: defaultAvatars[names.kimsamdae] },
+  { id: "badeulbageulbadeul", owner: names.badeulbageulbadeul, queryName: names.badeulbageulbadeul, label: names.badeulbageulbadeul, avatarUrl: defaultAvatars[names.badeulbageulbadeul] },
+  { id: "ddiddu", owner: names.ddiddu, queryName: names.ddiddu, label: names.ddiddu, avatarUrl: defaultAvatars[names.ddiddu] },
 ];
-const ownerOptions = ["꿀숑", "미느몬", "김삼대", "바들바글바들", "디뚜뚜뚜"];
+const ownerOptions = defaultAccounts.map((account) => account.owner);
 
 const state = {
   accounts: loadAccounts(),
@@ -35,6 +50,7 @@ const elements = {
   addAccountButton: document.querySelector("#add-account-button"),
   saveAccountsButton: document.querySelector("#save-accounts-button"),
   status: document.querySelector("#status"),
+  profileBoard: document.querySelector("#profile-board"),
   assignmentBoard: document.querySelector("#assignment-board"),
   rosterBoard: document.querySelector("#roster-board"),
   assignedRosterBoard: document.querySelector("#assigned-roster-board"),
@@ -99,24 +115,15 @@ async function fetchAccountRoster(account, options = {}) {
         key: characterKey(character),
       }));
 
-    return {
-      account,
-      ok: true,
-      cached: payload.cached,
-      characters,
-    };
+    return { account, ok: true, cached: payload.cached, characters };
   } catch (error) {
-    return {
-      account,
-      ok: false,
-      error: error.message,
-      characters: [],
-    };
+    return { account, ok: false, error: error.message, characters: [] };
   }
 }
 
 function renderAll() {
   renderSummary();
+  renderProfileBoard();
   renderAssignmentBoard();
   renderRosterBoard();
 }
@@ -127,10 +134,29 @@ function renderSummary() {
   elements.assignedTotal.textContent = state.assignments.length.toLocaleString("ko-KR");
 }
 
+function renderProfileBoard() {
+  const profiles = getOwners().map((owner) => {
+    const card = document.createElement("article");
+    card.className = "profile-card";
+
+    const image = document.createElement("img");
+    image.className = "profile-image";
+    image.src = getOwnerAvatarUrl(owner);
+    image.alt = "";
+
+    const name = document.createElement("strong");
+    name.textContent = owner;
+
+    card.append(image, name);
+    return card;
+  });
+
+  elements.profileBoard.replaceChildren(...profiles);
+}
+
 function renderAssignmentBoard() {
   const owners = getOwners();
   const charactersByKey = new Map(getAllCharacters().map((character) => [character.key, character]));
-
   const columns = owners.map((owner) => {
     const fragment = elements.ownerTemplate.content.cloneNode(true);
     const column = fragment.querySelector(".owner-column");
@@ -170,9 +196,7 @@ function renderRosterBoard(isLoading = false) {
   }
 
   const columns = accountGroups.map((group) => {
-    const rosters = group.accounts
-      .map((account) => state.rosters.find((item) => item.account.id === account.id))
-      .filter(Boolean);
+    const rosters = group.accounts.map((account) => state.rosters.find((item) => item.account.id === account.id)).filter(Boolean);
     const fragment = elements.sourceTemplate.content.cloneNode(true);
     const column = fragment.querySelector(".source-column");
     const list = column.querySelector(".character-list");
@@ -191,15 +215,6 @@ function renderRosterBoard(isLoading = false) {
       .filter((character) => !assignedKeys.has(character.key))
       .sort(compareCharacters);
 
-    if (failed.length && !characters.length) {
-      column.querySelector(".source-count").textContent = "오류";
-      const message = document.createElement("p");
-      message.className = "column-message is-error";
-      message.textContent = failed.map((roster) => `${roster.account.label}: ${roster.error}`).join(" / ");
-      list.replaceChildren(message);
-      return column;
-    }
-
     column.querySelector(".source-count").textContent = `${characters.length}`;
     const listItems = [];
 
@@ -212,8 +227,8 @@ function renderRosterBoard(isLoading = false) {
 
     if (!characters.length) {
       const message = document.createElement("p");
-      message.className = "column-message";
-      message.textContent = `${minItemLevel}+ 캐릭터 없음`;
+      message.className = failed.length ? "column-message is-error" : "column-message";
+      message.textContent = failed.length ? listItems[0].textContent : `${minItemLevel}+ 캐릭터 없음`;
       list.replaceChildren(message);
       return column;
     }
@@ -229,7 +244,6 @@ function renderRosterBoard(isLoading = false) {
 
 function renderAssignedRosterBoard() {
   const charactersByKey = new Map(getAllCharacters().map((character) => [character.key, character]));
-
   const columns = getOwners().map((owner) => {
     const fragment = elements.sourceTemplate.content.cloneNode(true);
     const column = fragment.querySelector(".source-column");
@@ -269,7 +283,7 @@ function createLoadingSourceColumn(group) {
   return column;
 }
 
-function createCharacterCard(character, mode, assignedOwner = "") {
+function createCharacterCard(character, mode) {
   const fragment = elements.characterTemplate.content.cloneNode(true);
   const card = fragment.querySelector(".character-card");
   const actions = card.querySelector(".character-actions");
@@ -294,7 +308,6 @@ function createCharacterCard(character, mode, assignedOwner = "") {
     removeButton.setAttribute("aria-label", `${character.characterName} 편성 해제`);
     removeButton.textContent = "×";
     removeButton.addEventListener("click", () => removeAssignment(character.key));
-
     actions.replaceChildren(removeButton);
     return card;
   }
@@ -306,7 +319,6 @@ function createCharacterCard(character, mode, assignedOwner = "") {
   addButton.textContent = isAssigned ? "편성됨" : "추가";
   addButton.disabled = isAssigned;
   addButton.addEventListener("click", () => addAssignment(character, ownerSelect.value));
-
   actions.replaceChildren(ownerSelect, addButton);
   return card;
 }
@@ -314,28 +326,13 @@ function createCharacterCard(character, mode, assignedOwner = "") {
 function createOwnerSelect(selectedOwner) {
   const select = document.createElement("select");
   select.className = "owner-select";
-  for (const owner of getOwners()) {
-    select.add(new Option(owner, owner, owner === selectedOwner, owner === selectedOwner));
-  }
+  for (const owner of getOwners()) select.add(new Option(owner, owner, owner === selectedOwner, owner === selectedOwner));
   return select;
 }
 
 function addAssignment(character, owner) {
   if (state.assignments.some((assignment) => assignment.key === character.key)) return;
-  state.assignments.push({
-    key: character.key,
-    owner,
-    character,
-  });
-  saveAssignments();
-  renderAll();
-}
-
-function moveAssignment(character, owner) {
-  const assignment = state.assignments.find((item) => item.key === character.key);
-  if (!assignment) return;
-  assignment.owner = owner;
-  assignment.character = character;
+  state.assignments.push({ key: character.key, owner, character });
   saveAssignments();
   renderAll();
 }
@@ -350,9 +347,7 @@ function pruneAssignments() {
   const knownKeys = new Set(getAllCharacters().map((character) => character.key));
   const previousLength = state.assignments.length;
   state.assignments = state.assignments.filter((assignment) => knownKeys.has(assignment.key));
-  if (state.assignments.length !== previousLength) {
-    saveAssignments();
-  }
+  if (state.assignments.length !== previousLength) saveAssignments();
 }
 
 async function saveRosterChanges() {
@@ -360,21 +355,12 @@ async function saveRosterChanges() {
   setStatus("편성 저장 중", "loading");
   const ok = await saveSheetState();
   elements.saveRosterButton.disabled = false;
-
-  if (ok) {
-    const total = getAllCharacters().length;
-    setStatus(`${minItemLevel}+ ${total}명 조회 · 편성 저장 완료`, "success");
-    return;
-  }
-
-  setStatus("편성 저장 실패", "error");
+  setStatus(ok ? `${minItemLevel}+ ${getAllCharacters().length}명 조회 · 편성 저장 완료` : "편성 저장 실패", ok ? "success" : "error");
 }
 
 function openAccountEditor() {
   elements.accountEditor.replaceChildren();
-  for (const account of state.accounts) {
-    addAccountEditorRow(account);
-  }
+  for (const account of state.accounts) addAccountEditorRow(account);
   elements.accountsDialog.showModal();
 }
 
@@ -385,7 +371,7 @@ function openRosterDialog() {
 function addAccountEditorRow(account = {}) {
   const row = document.createElement("div");
   row.className = "account-row";
-  const avatarUrl = account.avatarUrl ?? "";
+  const avatarUrl = account.avatarUrl ?? defaultAvatars[account.owner] ?? "";
   row.innerHTML = `
     <label class="avatar-picker">
       <img class="account-avatar-preview" src="${escapeAttribute(avatarUrl)}" alt="" />
@@ -398,29 +384,19 @@ function addAccountEditorRow(account = {}) {
     <button class="small-button danger" type="button">삭제</button>
   `;
   row.querySelector("button").addEventListener("click", () => row.remove());
-  row.querySelector('[data-field="avatarFile"]').addEventListener("change", (event) => {
-    uploadProfileImage(row, event.target.files?.[0]);
-  });
+  row.querySelector('[data-field="avatarFile"]').addEventListener("change", (event) => uploadProfileImage(row, event.target.files?.[0]));
   elements.accountEditor.append(row);
 }
 
 function saveAccountEditor() {
   const rows = [...elements.accountEditor.querySelectorAll(".account-row")];
-  const nextAccounts = rows
-    .map((row, index) => {
-      const queryName = row.querySelector('[data-field="queryName"]').value.trim();
-      const owner = row.querySelector('[data-field="owner"]').value.trim();
-      const avatarUrl = row.querySelector('[data-field="avatarUrl"]').value.trim();
-      if (!queryName || !owner) return null;
-      return {
-        id: stableAccountId(queryName, queryName, index),
-        label: queryName,
-        queryName,
-        owner,
-        avatarUrl,
-      };
-    })
-    .filter(Boolean);
+  const nextAccounts = rows.map((row, index) => {
+    const queryName = row.querySelector('[data-field="queryName"]').value.trim();
+    const owner = row.querySelector('[data-field="owner"]').value.trim();
+    const avatarUrl = row.querySelector('[data-field="avatarUrl"]').value.trim() || defaultAvatars[owner] || "";
+    if (!queryName || !owner) return null;
+    return { id: stableAccountId(queryName, queryName, index), label: queryName, queryName, owner, avatarUrl };
+  }).filter(Boolean);
 
   if (!nextAccounts.length) {
     setStatus("계정을 최소 1개 이상 입력해 주세요.", "error");
@@ -440,7 +416,6 @@ function renderStatus() {
     setStatus(`${failed.length}개 계정 조회 실패`, "error");
     return;
   }
-
   const total = getAllCharacters().length;
   const cachedCount = state.rosters.filter((roster) => roster.cached).length;
   const time = state.lastUpdatedAt?.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
@@ -463,18 +438,12 @@ function getOwners() {
 
 function getAccountGroups() {
   const groups = new Map();
-
   for (const account of state.accounts) {
     const owner = account.owner || account.label || account.queryName;
     if (!owner) continue;
-
-    if (!groups.has(owner)) {
-      groups.set(owner, { owner, accounts: [] });
-    }
-
+    if (!groups.has(owner)) groups.set(owner, { owner, accounts: [] });
     groups.get(owner).accounts.push(account);
   }
-
   return Array.from(groups.values());
 }
 
@@ -485,37 +454,23 @@ function getAccountGroupMeta(group) {
 
 function setOwnerHeading(heading, owner) {
   heading.textContent = "";
-  const avatarUrl = getOwnerAvatarUrl(owner);
-
-  if (avatarUrl) {
-    const image = document.createElement("img");
-    image.className = "owner-avatar";
-    image.src = avatarUrl;
-    image.alt = "";
-    heading.append(image);
-  }
-
+  const image = document.createElement("img");
+  image.className = "owner-avatar";
+  image.src = getOwnerAvatarUrl(owner);
+  image.alt = "";
   const name = document.createElement("span");
   name.textContent = owner;
-  heading.append(name);
+  heading.append(image, name);
 }
 
 function getOwnerAvatarUrl(owner) {
-  return state.accounts.find((account) => account.owner === owner && account.avatarUrl)?.avatarUrl ?? "";
+  return state.accounts.find((account) => account.owner === owner && account.avatarUrl)?.avatarUrl ?? defaultAvatars[owner] ?? "";
 }
 
 async function uploadProfileImage(row, file) {
   if (!file) return;
-
-  if (!file.type.startsWith("image/")) {
-    setStatus("이미지 파일만 업로드할 수 있습니다.", "error");
-    return;
-  }
-
-  if (file.size > 4 * 1024 * 1024) {
-    setStatus("프로필 사진은 4MB 이하만 업로드할 수 있습니다.", "error");
-    return;
-  }
+  if (!file.type.startsWith("image/")) return setStatus("이미지 파일만 업로드할 수 있습니다.", "error");
+  if (file.size > 4 * 1024 * 1024) return setStatus("프로필 사진은 4MB 이하만 업로드할 수 있습니다.", "error");
 
   const preview = row.querySelector(".account-avatar-preview");
   const avatarInput = row.querySelector('[data-field="avatarUrl"]');
@@ -524,24 +479,13 @@ async function uploadProfileImage(row, file) {
   try {
     preview.src = await readFileAsDataUrl(file);
     setStatus("프로필 사진 업로드 중", "loading");
-
     const response = await fetch("/api/profile-image", {
       method: "POST",
-      headers: {
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        fileName: file.name,
-        contentType: file.type,
-        dataUrl: preview.src,
-      }),
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ fileName: file.name, contentType: file.type, dataUrl: preview.src }),
     });
     const payload = await response.json();
-
-    if (!response.ok) {
-      throw new Error(payload.error ?? "프로필 사진 업로드에 실패했습니다.");
-    }
-
+    if (!response.ok) throw new Error(payload.error ?? "프로필 사진 업로드에 실패했습니다.");
     avatarInput.value = payload.url;
     preview.src = payload.url;
     setStatus("프로필 사진 업로드 완료. 저장을 눌러 반영하세요.", "success");
@@ -563,14 +507,10 @@ function readFileAsDataUrl(file) {
 
 function uniqueCharacters(characters) {
   const charactersByKey = new Map();
-
   for (const character of characters) {
     const key = character.key ?? characterKey(character);
-    if (!charactersByKey.has(key)) {
-      charactersByKey.set(key, character);
-    }
+    if (!charactersByKey.has(key)) charactersByKey.set(key, character);
   }
-
   return Array.from(charactersByKey.values());
 }
 
@@ -600,11 +540,9 @@ function createSkeletonRow() {
 
 function loadAccounts() {
   const savedAccounts = normalizeAccounts(readJson(storageKeys.accounts, null));
-  if (savedAccounts.length) return savedAccounts;
-
+  if (savedAccounts.length) return mergeDefaultAvatars(savedAccounts);
   const legacyAccounts = normalizeAccounts(readJson(storageKeys.legacyAccounts, null));
-  if (legacyAccounts.length) return mergeDefaultAccounts(legacyAccounts);
-
+  if (legacyAccounts.length) return mergeDefaultAvatars(legacyAccounts);
   return defaultAccounts;
 }
 
@@ -623,28 +561,17 @@ function saveAssignments() {
 async function loadSheetState() {
   try {
     const response = await fetch("/api/state");
-
-    if (!response.ok) {
-      throw new Error("remote state unavailable");
-    }
-
+    if (!response.ok) throw new Error("remote state unavailable");
     const payload = await response.json();
     const remoteAccounts = normalizeAccounts(payload.accounts);
     const remoteAssignments = normalizeAssignments(payload.assignments);
-
-    state.accounts = remoteAccounts.length ? remoteAccounts : state.accounts;
-    if (Array.isArray(payload.assignments)) {
-      state.assignments = remoteAssignments;
-    }
+    state.accounts = remoteAccounts.length ? mergeDefaultAvatars(remoteAccounts) : state.accounts;
+    if (Array.isArray(payload.assignments)) state.assignments = remoteAssignments;
     state.isRemoteReady = true;
-
     saveAccounts();
     saveAssignments();
     renderAll();
-
-    if (!payload.exists) {
-      saveSheetState();
-    }
+    if (!payload.exists) saveSheetState();
   } catch {
     state.isRemoteReady = false;
   }
@@ -654,15 +581,9 @@ async function saveSheetState() {
   try {
     const response = await fetch("/api/state", {
       method: "PUT",
-      headers: {
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        accounts: state.accounts,
-        assignments: state.assignments,
-      }),
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ accounts: state.accounts, assignments: state.assignments }),
     });
-
     state.isRemoteReady = response.ok;
     return response.ok;
   } catch {
@@ -682,56 +603,38 @@ function readJson(key, fallback) {
 
 function normalizeAccounts(accounts) {
   if (!Array.isArray(accounts)) return [];
-
-  return accounts
-    .map((account, index) => {
-      const label = String(account?.label ?? "").trim();
-      const queryName = String(account?.queryName ?? "").trim();
-      const owner = String(account?.owner ?? "").trim();
-      if (!queryName || !owner) return null;
-
-      return {
-        id: String(account?.id ?? `account-${index}`).trim() || `account-${index}`,
-        label: label || queryName,
-        queryName,
-        owner,
-        avatarUrl: String(account?.avatarUrl ?? "").trim(),
-      };
-    })
-    .filter(Boolean);
+  return accounts.map((account, index) => {
+    const label = String(account?.label ?? "").trim();
+    const queryName = String(account?.queryName ?? "").trim();
+    const owner = String(account?.owner ?? "").trim();
+    if (!queryName || !owner) return null;
+    return {
+      id: String(account?.id ?? `account-${index}`).trim() || `account-${index}`,
+      label: label || queryName,
+      queryName,
+      owner,
+      avatarUrl: String(account?.avatarUrl ?? defaultAvatars[owner] ?? "").trim(),
+    };
+  }).filter(Boolean);
 }
 
 function createOwnerOptions(selectedOwner = "") {
-  return ownerOptions
-    .map((owner) => {
-      const selected = owner === selectedOwner ? " selected" : "";
-      return `<option value="${escapeAttribute(owner)}"${selected}>${owner}</option>`;
-    })
-    .join("");
+  return ownerOptions.map((owner) => `<option value="${escapeAttribute(owner)}"${owner === selectedOwner ? " selected" : ""}>${owner}</option>`).join("");
 }
 
 function normalizeAssignments(assignments) {
   if (!Array.isArray(assignments)) return [];
-
-  return assignments
-    .map((assignment) => {
-      const key = String(assignment?.key ?? "").trim();
-      const owner = String(assignment?.owner ?? "").trim();
-      if (!key || !owner || !assignment?.character) return null;
-
-      return {
-        key,
-        owner,
-        character: assignment.character,
-      };
-    })
-    .filter(Boolean);
+  return assignments.map((assignment) => {
+    const key = String(assignment?.key ?? "").trim();
+    const owner = String(assignment?.owner ?? "").trim();
+    if (!key || !owner || !assignment?.character) return null;
+    return { key, owner, character: assignment.character };
+  }).filter(Boolean);
 }
 
-function mergeDefaultAccounts(accounts) {
-  const defaultQueryNames = new Set(defaultAccounts.map((account) => account.queryName));
-  const customAccounts = accounts.filter((account) => !defaultQueryNames.has(account.queryName));
-  return [...defaultAccounts, ...customAccounts];
+function mergeDefaultAvatars(accounts) {
+  const byOwner = new Map(accounts.map((account) => [account.owner, account]));
+  return defaultAccounts.map((defaultAccount) => ({ ...defaultAccount, ...(byOwner.get(defaultAccount.owner) ?? {}) }));
 }
 
 function stableAccountId(label, queryName, index) {

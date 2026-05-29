@@ -20,187 +20,59 @@
       </header>
 
       <section class="summary-strip" aria-label="요약">
-        <div class="summary-item">
-          <span>표시 기준</span>
-          <strong id="level-label">Lv.1700+</strong>
-        </div>
-        <div class="summary-item">
-          <span>사람</span>
-          <strong id="owner-count">-</strong>
-        </div>
-        <div class="summary-item">
-          <span>조회 캐릭터</span>
-          <strong id="character-total">-</strong>
-        </div>
-        <div class="summary-item">
-          <span>편성 캐릭터</span>
-          <strong id="assigned-total">-</strong>
-        </div>
+        <div class="summary-item"><span>표시 기준</span><strong id="level-label">Lv.1700+</strong></div>
+        <div class="summary-item"><span>사람</span><strong id="owner-count">-</strong></div>
+        <div class="summary-item"><span>조회 캐릭터</span><strong id="character-total">-</strong></div>
+        <div class="summary-item"><span>편성 캐릭터</span><strong id="assigned-total">-</strong></div>
+      </section>
+
+      <section class="profile-strip" aria-label="프로필">
+        <div id="profile-board" class="profile-board"></div>
       </section>
 
       <section class="raid-guide-section" aria-labelledby="raid-guide-title">
         <div class="section-heading">
-          <div>
-            <p class="eyebrow">Gold Raid Guide</p>
-            <h2 id="raid-guide-title">레벨별 레이드</h2>
-          </div>
-          <p class="hint">귀골 기준 · 추가 레이드 참고</p>
+          <div><p class="eyebrow">Gold Raid Guide</p><h2 id="raid-guide-title">레벨별 레이드</h2></div>
+          <p class="hint">골드 기준 · 추가 레이드 참고</p>
         </div>
-
         <div class="raid-guide-list">
-          <article class="raid-guide-card" data-tier="ancient">
-            <strong>Lv.1750+</strong>
-            <div>
-              <p>세르카 나메 · 종막 하드 · 성당 3단계</p>
-              <span>추가: 4막 하드</span>
-            </div>
-          </article>
-
-          <article class="raid-guide-card" data-tier="red">
-            <strong>Lv.1740+</strong>
-            <div>
-              <p>세르카 나메 · 종막 하드 · 4막 하드</p>
-              <span>추가: 성당 2단계</span>
-            </div>
-          </article>
-
-          <article class="raid-guide-card" data-tier="green">
-            <strong>Lv.1730+</strong>
-            <div>
-              <p>세르카 하드 · 종막 하드 · 4막 하드</p>
-              <span>추가: 성당 2단계</span>
-            </div>
-          </article>
-
-          <article class="raid-guide-card" data-tier="blue">
-            <strong>Lv.1720+</strong>
-            <div>
-              <p>4막 하드 · 성당 2단계 · 종막 노말</p>
-              <span>추가: 세르카 노말</span>
-            </div>
-          </article>
-
-          <article class="raid-guide-card" data-tier="gray">
-            <strong>Lv.1710+</strong>
-            <div>
-              <p>세르카 노말 · 종막 노말 · 4막 노말</p>
-              <span>추가: 성당 1단계</span>
-            </div>
-          </article>
-
-          <article class="raid-guide-card" data-tier="low">
-            <strong>Lv.1700+</strong>
-            <div>
-              <p>4막 노말 · 성당 1단계 · 3막 하드</p>
-              <span>추가: 없음</span>
-            </div>
-          </article>
+          <article class="raid-guide-card" data-tier="ancient"><strong>Lv.1750+</strong><div><p>아르카디아 · 종막 하드 · 강습 3관문</p><span>추가: 4막 하드</span></div></article>
+          <article class="raid-guide-card" data-tier="red"><strong>Lv.1740+</strong><div><p>아르카디아 · 종막 하드 · 4막 하드</p><span>추가: 강습 2관문</span></div></article>
+          <article class="raid-guide-card" data-tier="green"><strong>Lv.1730+</strong><div><p>아르카디아 하드 · 종막 하드 · 4막 하드</p><span>추가: 강습 2관문</span></div></article>
+          <article class="raid-guide-card" data-tier="blue"><strong>Lv.1720+</strong><div><p>4막 하드 · 강습 2관문 · 종막 노말</p><span>추가: 아르카디아 노말</span></div></article>
+          <article class="raid-guide-card" data-tier="gray"><strong>Lv.1710+</strong><div><p>아르카디아 노말 · 종막 노말 · 4막 노말</p><span>추가: 강습 1관문</span></div></article>
+          <article class="raid-guide-card" data-tier="low"><strong>Lv.1700+</strong><div><p>4막 노말 · 강습 1관문 · 3막 하드</p><span>추가: 없음</span></div></article>
         </div>
       </section>
 
       <section class="planner-section" aria-labelledby="planner-title">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">Character List</p>
-            <h2 id="planner-title">보유 캐릭터</h2>
-          </div>
-        </div>
+        <div class="section-heading"><div><p class="eyebrow">Character List</p><h2 id="planner-title">보유 캐릭터</h2></div></div>
         <div id="assignment-board" class="assignment-board"></div>
       </section>
-
     </main>
 
     <dialog id="accounts-dialog" class="accounts-dialog">
       <form method="dialog" class="dialog-panel">
-        <div class="dialog-heading">
-          <div>
-            <p class="eyebrow">Accounts</p>
-            <h2>조회 계정 편집</h2>
-          </div>
-          <button class="icon-button" value="cancel" type="submit" aria-label="닫기">×</button>
-        </div>
+        <div class="dialog-heading"><div><p class="eyebrow">Accounts</p><h2>조회 계정 편집</h2></div><button class="icon-button" value="cancel" type="submit" aria-label="닫기">×</button></div>
         <div id="account-editor" class="account-editor"></div>
-        <div class="dialog-actions">
-          <button id="add-account-button" class="secondary-button" type="button">계정 추가</button>
-          <button id="save-accounts-button" class="primary-button" value="default" type="button">저장</button>
-        </div>
+        <div class="dialog-actions"><button id="add-account-button" class="secondary-button" type="button">계정 추가</button><button id="save-accounts-button" class="primary-button" value="default" type="button">저장</button></div>
       </form>
     </dialog>
 
     <dialog id="roster-dialog" class="roster-dialog">
       <form method="dialog" class="dialog-panel roster-dialog-panel">
         <div class="dialog-heading">
-          <div>
-            <p class="eyebrow">Roster Pool</p>
-            <h2>1700 이상 조회 캐릭터</h2>
-          </div>
-          <div class="dialog-heading-actions">
-            <div id="status" class="status" role="status" aria-live="polite">대기 중</div>
-            <button id="refresh-button" class="primary-button" type="button">재조회</button>
-            <button id="save-roster-button" class="primary-button" type="button">저장</button>
-            <button class="icon-button" value="cancel" type="submit" aria-label="닫기">×</button>
-          </div>
+          <div><p class="eyebrow">Roster Pool</p><h2>1700 이상 조회 캐릭터</h2></div>
+          <div class="dialog-heading-actions"><div id="status" class="status" role="status" aria-live="polite">대기 중</div><button id="refresh-button" class="primary-button" type="button">새로고침</button><button id="save-roster-button" class="primary-button" type="button">저장</button><button class="icon-button" value="cancel" type="submit" aria-label="닫기">×</button></div>
         </div>
-        <section class="roster-edit-section">
-          <div class="roster-edit-heading">
-            <div>
-              <p class="eyebrow">Available</p>
-              <h3>편성되지 않은 캐릭터</h3>
-            </div>
-            <p class="hint">소속을 선택한 뒤 추가하면 아래 편성된 캐릭터로 이동합니다.</p>
-          </div>
-          <div id="roster-board" class="roster-board" aria-live="polite"></div>
-        </section>
-        <section class="roster-edit-section">
-          <div class="roster-edit-heading">
-            <div>
-              <p class="eyebrow">Assigned</p>
-              <h3>편성된 캐릭터</h3>
-            </div>
-            <p class="hint">×를 누르면 편성이 해제되어 위 목록으로 이동합니다.</p>
-          </div>
-          <div id="assigned-roster-board" class="roster-board assigned-roster-board" aria-live="polite"></div>
-        </section>
+        <section class="roster-edit-section"><div class="roster-edit-heading"><div><p class="eyebrow">Available</p><h3>편성하지 않은 캐릭터</h3></div><p class="hint">소속을 선택하고 추가하면 아래 편성 목록으로 이동합니다.</p></div><div id="roster-board" class="roster-board" aria-live="polite"></div></section>
+        <section class="roster-edit-section"><div class="roster-edit-heading"><div><p class="eyebrow">Assigned</p><h3>편성된 캐릭터</h3></div><p class="hint">×를 누르면 편성이 해제되어 목록으로 이동합니다.</p></div><div id="assigned-roster-board" class="roster-board assigned-roster-board" aria-live="polite"></div></section>
       </form>
     </dialog>
 
-    <template id="owner-column-template">
-      <article class="owner-column">
-        <div class="owner-heading">
-          <h3></h3>
-          <strong class="owner-count">0</strong>
-        </div>
-        <div class="assignment-list"></div>
-      </article>
-    </template>
-
-    <template id="source-column-template">
-      <article class="source-column">
-        <div class="source-heading">
-          <div>
-            <h3></h3>
-            <span class="source-meta"></span>
-          </div>
-          <strong class="source-count">0</strong>
-        </div>
-        <div class="character-list"></div>
-      </article>
-    </template>
-
-    <template id="character-card-template">
-      <div class="character-card">
-        <div class="character-main">
-          <strong class="character-name"></strong>
-          <span class="class-name"></span>
-        </div>
-        <div class="character-meta">
-          <span class="source-owner"></span>
-          <strong class="item-level"></strong>
-        </div>
-        <div class="character-actions"></div>
-      </div>
-    </template>
-
+    <template id="owner-column-template"><article class="owner-column"><div class="owner-heading"><h3></h3><strong class="owner-count">0</strong></div><div class="assignment-list"></div></article></template>
+    <template id="source-column-template"><article class="source-column"><div class="source-heading"><div><h3></h3><span class="source-meta"></span></div><strong class="source-count">0</strong></div><div class="character-list"></div></article></template>
+    <template id="character-card-template"><div class="character-card"><div class="character-main"><strong class="character-name"></strong><span class="class-name"></span></div><div class="character-meta"><span class="source-owner"></span><strong class="item-level"></strong></div><div class="character-actions"></div></div></template>
     <script src="/app.js" type="module"></script>
   </body>
 </html>

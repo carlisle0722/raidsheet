@@ -1,5 +1,3 @@
-import { put } from "@vercel/blob";
-
 const maxImageBytes = 4 * 1024 * 1024;
 const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 
@@ -38,6 +36,7 @@ export default async function handler(req, res) {
       return;
     }
 
+    const { put } = await import("@vercel/blob");
     const extension = getExtension(fileName, contentType);
     const blob = await put(`raidsheet/profiles/${crypto.randomUUID()}${extension}`, buffer, {
       access: "public",

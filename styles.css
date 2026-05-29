@@ -709,3 +709,53 @@ h3:has(.owner-avatar) {
     grid-template-columns: 78px minmax(0, 1fr);
   }
 }
+
+.profile-strip {
+  margin-bottom: 14px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.profile-board {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.profile-card {
+  display: grid;
+  gap: 8px;
+  place-items: center;
+  min-height: 132px;
+  padding: 12px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.profile-image {
+  width: 82px;
+  height: 82px;
+  border: 3px solid #fff;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(47, 111, 106, 0.12), rgba(240, 206, 134, 0.22)), var(--surface);
+  box-shadow: 0 10px 22px rgba(24, 31, 42, 0.14);
+  object-fit: cover;
+}
+
+.profile-card strong {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 0.96rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .profile-board {
+    grid-template-columns: 1fr;
+  }
+}
