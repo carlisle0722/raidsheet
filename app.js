@@ -10,7 +10,7 @@ const names = {
   mineumon: "\uBBF8\uB290\uBAAC",
   kimsamdae: "\uAE40\uC0BC\uB300",
   badeulbageulbadeul: "\uBC14\uB4E4\uBC14\uAE00\uBC14\uB4E4",
-  ddiddu: "\uB514\uB69C\uB69C\uB69C\uC57C",
+  ddiddu: "\uB514\uB69C\uB69C\uB69C",
 };
 
 const defaultAvatars = {
@@ -375,13 +375,14 @@ function addAccountEditorRow(account = {}) {
   row.innerHTML = `
     <label class="avatar-picker">
       <img class="account-avatar-preview" src="${escapeAttribute(avatarUrl)}" alt="" />
-      <span>프로필 사진</span>
+      <span>\uD504\uB85C\uD544 \uC0AC\uC9C4</span>
+      <small class="avatar-upload-state">\uD074\uB9AD\uD574\uC11C \uC120\uD0DD</small>
       <input data-field="avatarUrl" type="hidden" value="${escapeAttribute(avatarUrl)}" />
       <input data-field="avatarFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
     </label>
-    <label>캐릭터명<input data-field="queryName" type="text" value="${escapeAttribute(account.queryName ?? account.label ?? "")}" placeholder="대표 캐릭터명" /></label>
-    <label>소속<select data-field="owner">${createOwnerOptions(account.owner)}</select></label>
-    <button class="small-button danger" type="button">삭제</button>
+    <label>\uCE90\uB9AD\uD130\uBA85<input data-field="queryName" type="text" value="${escapeAttribute(account.queryName ?? account.label ?? "")}" placeholder="\uB300\uD45C \uCE90\uB9AD\uD130\uBA85" /></label>
+    <label>\uC18C\uC18D<select data-field="owner">${createOwnerOptions(account.owner)}</select></label>
+    <button class="small-button danger" type="button">\uC0AD\uC81C</button>
   `;
   row.querySelector("button").addEventListener("click", () => row.remove());
   row.querySelector('[data-field="avatarFile"]').addEventListener("change", (event) => uploadProfileImage(row, event.target.files?.[0]));
@@ -469,30 +470,45 @@ function getOwnerAvatarUrl(owner) {
 
 async function uploadProfileImage(row, file) {
   if (!file) return;
-  if (!file.type.startsWith("image/")) return setStatus("이미지 파일만 업로드할 수 있습니다.", "error");
-  if (file.size > 4 * 1024 * 1024) return setStatus("프로필 사진은 4MB 이하만 업로드할 수 있습니다.", "error");
+  const uploadState = row.querySelector(".avatar-upload-state");
+  const setUploadState = (message) => {
+    if (uploadState) uploadState.textContent = message;
+  };
+
+  if (!file.type.startsWith("image/")) {
+    setUploadState("\uC774\uBBF8\uC9C0\uB9CC \uAC00\uB2A5");
+    return setStatus("\uC774\uBBF8\uC9C0 \uD30C\uC77C\uB9CC \uC5C5\uB85C\uB4DC\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.", "error");
+  }
+  if (file.size > 4 * 1024 * 1024) {
+    setUploadState("4MB \uC774\uD558\uB9CC \uAC00\uB2A5");
+    return setStatus("\uD504\uB85C\uD544 \uC0AC\uC9C4\uC740 4MB \uC774\uD558\uB9CC \uC5C5\uB85C\uB4DC\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.", "error");
+  }
 
   const preview = row.querySelector(".account-avatar-preview");
   const avatarInput = row.querySelector('[data-field="avatarUrl"]');
-  const previousUrl = avatarInput.value;
 
   try {
-    preview.src = await readFileAsDataUrl(file);
-    setStatus("프로필 사진 업로드 중", "loading");
+    const dataUrl = await readFileAsDataUrl(file);
+    preview.src = dataUrl;
+    avatarInput.value = dataUrl;
+    setUploadState("\uC120\uD0DD\uB428");
+    setStatus("\uD504\uB85C\uD544 \uC0AC\uC9C4\uC774 \uC0BD\uC785\uB410\uC2B5\uB2C8\uB2E4. Blob\uC5D0 \uC5C5\uB85C\uB4DC \uC911...", "loading");
+
     const response = await fetch("/api/profile-image", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ fileName: file.name, contentType: file.type, dataUrl: preview.src }),
+      body: JSON.stringify({ fileName: file.name, contentType: file.type, dataUrl }),
     });
     const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error ?? "프로필 사진 업로드에 실패했습니다.");
+    if (!response.ok) throw new Error(payload.error ?? "\uD504\uB85C\uD544 \uC0AC\uC9C4 \uC5C5\uB85C\uB4DC\uC5D0 \uC2E4\uD328\uD588\uC2B5\uB2C8\uB2E4.");
+
     avatarInput.value = payload.url;
     preview.src = payload.url;
-    setStatus("프로필 사진 업로드 완료. 저장을 눌러 반영하세요.", "success");
+    setUploadState("Blob \uC5C5\uB85C\uB4DC \uC644\uB8CC");
+    setStatus("\uD504\uB85C\uD544 \uC0AC\uC9C4 \uC5C5\uB85C\uB4DC \uC644\uB8CC. \uC800\uC7A5\uC744 \uB20C\uB7EC \uBC18\uC601\uD558\uC138\uC694.", "success");
   } catch (error) {
-    avatarInput.value = previousUrl;
-    preview.src = previousUrl;
-    setStatus(error.message, "error");
+    setUploadState("\uB85C\uCEEC\uB85C \uC0BD\uC785\uB428");
+    setStatus(`${error.message} \uB300\uC2E0 \uD604\uC7AC \uC120\uD0DD\uD55C \uC774\uBBF8\uC9C0\uB294 \uD654\uBA74\uC5D0 \uC0BD\uC785\uB410\uC2B5\uB2C8\uB2E4.`, "error");
   }
 }
 
