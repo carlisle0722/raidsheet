@@ -4,6 +4,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { extname, join, normalize, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import healthHandler from "./api/health.js";
+import profileImageHandler from "./api/profile-image.js";
 import rosterHandler from "./api/roster.js";
 import stateHandler from "./api/state.js";
 
@@ -40,6 +41,11 @@ const server = createServer(async (req, res) => {
 
     if (url.pathname === "/api/health") {
       healthHandler(req, res);
+      return;
+    }
+
+    if (url.pathname === "/api/profile-image") {
+      await profileImageHandler(req, res);
       return;
     }
 

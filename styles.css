@@ -99,6 +99,13 @@ h3 {
   font-size: 1.02rem;
 }
 
+h3:has(.owner-avatar) {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
 .primary-button,
 .secondary-button,
 .small-button,
@@ -280,6 +287,25 @@ h3 {
   background: rgba(47, 111, 106, 0.08);
   font-size: 0.82rem;
   text-align: center;
+}
+
+.owner-avatar,
+.account-avatar-preview {
+  display: block;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background:
+    linear-gradient(135deg, rgba(47, 111, 106, 0.12), rgba(240, 206, 134, 0.18)),
+    var(--surface);
+  object-fit: cover;
+}
+
+.owner-avatar {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  box-shadow: 0 5px 14px rgba(24, 31, 42, 0.1);
 }
 
 .assignment-list,
@@ -469,7 +495,7 @@ h3 {
 
 .account-row {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) minmax(160px, 0.8fr) auto;
+  grid-template-columns: 96px minmax(180px, 1fr) minmax(160px, 0.8fr) auto;
   gap: 8px;
   align-items: end;
   padding: 10px;
@@ -484,6 +510,40 @@ h3 {
   color: var(--muted);
   font-size: 0.78rem;
   font-weight: 800;
+}
+
+.avatar-picker {
+  place-items: center;
+  align-self: stretch;
+  min-height: 92px;
+  padding: 8px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  cursor: pointer;
+  text-align: center;
+}
+
+.avatar-picker:hover {
+  border-color: rgba(47, 111, 106, 0.46);
+  background: rgba(47, 111, 106, 0.04);
+}
+
+.account-avatar-preview {
+  width: 48px;
+  height: 48px;
+}
+
+.account-avatar-preview:not([src]),
+.account-avatar-preview[src=""] {
+  padding: 12px;
+}
+
+.avatar-picker input[type="file"] {
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
 }
 
 .character-card.is-skeleton {

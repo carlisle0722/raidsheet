@@ -141,7 +141,7 @@ function renderAssignmentBoard() {
       .filter(Boolean)
       .sort(compareCharacters);
 
-    column.querySelector("h3").textContent = owner;
+    setOwnerHeading(column.querySelector("h3"), owner);
     column.querySelector(".owner-count").textContent = `${assigned.length}`;
 
     if (!assigned.length) {
@@ -177,7 +177,7 @@ function renderRosterBoard(isLoading = false) {
     const column = fragment.querySelector(".source-column");
     const list = column.querySelector(".character-list");
 
-    column.querySelector("h3").textContent = group.owner;
+    setOwnerHeading(column.querySelector("h3"), group.owner);
     column.querySelector(".source-meta").textContent = getAccountGroupMeta(group);
 
     if (state.isLoading && rosters.length < group.accounts.length) {
@@ -240,7 +240,7 @@ function renderAssignedRosterBoard() {
       .filter(Boolean)
       .sort(compareCharacters);
 
-    column.querySelector("h3").textContent = owner;
+    setOwnerHeading(column.querySelector("h3"), owner);
     column.querySelector(".source-meta").textContent = "편성됨";
     column.querySelector(".source-count").textContent = `${assigned.length}`;
 
@@ -262,7 +262,7 @@ function renderAssignedRosterBoard() {
 function createLoadingSourceColumn(group) {
   const fragment = elements.sourceTemplate.content.cloneNode(true);
   const column = fragment.querySelector(".source-column");
-  column.querySelector("h3").textContent = group.owner;
+  setOwnerHeading(column.querySelector("h3"), group.owner);
   column.querySelector(".source-meta").textContent = getAccountGroupMeta(group);
   column.querySelector(".source-count").textContent = "-";
   column.querySelector(".character-list").replaceChildren(...Array.from({ length: 5 }, createSkeletonRow));
@@ -385,12 +385,22 @@ function openRosterDialog() {
 function addAccountEditorRow(account = {}) {
   const row = document.createElement("div");
   row.className = "account-row";
+  const avatarUrl = account.avatarUrl ?? "";
   row.innerHTML = `
+    <label class="avatar-picker">
+      <img class="account-avatar-preview" src="${escapeAttribute(avatarUrl)}" alt="" />
+      <span>프로필 사진</span>
+      <input data-field="avatarUrl" type="hidden" value="${escapeAttribute(avatarUrl)}" />
+      <input data-field="avatarFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" />
+    </label>
     <label>캐릭터명<input data-field="queryName" type="text" value="${escapeAttribute(account.queryName ?? account.label ?? "")}" placeholder="대표 캐릭터명" /></label>
     <label>소속<select data-field="owner">${createOwnerOptions(account.owner)}</select></label>
     <button class="small-button danger" type="button">삭제</button>
   `;
   row.querySelector("button").addEventListener("click", () => row.remove());
+  row.querySelector('[data-field="avatarFile"]').addEventListener("change", (event) => {
+    uploadProfileImage(row, event.target.files?.[0]);
+  });
   elements.accountEditor.append(row);
 }
 
@@ -400,12 +410,14 @@ function saveAccountEditor() {
     .map((row, index) => {
       const queryName = row.querySelector('[data-field="queryName"]').value.trim();
       const owner = row.querySelector('[data-field="owner"]').value.trim();
+      const avatarUrl = row.querySelector('[data-field="avatarUrl"]').value.trim();
       if (!queryName || !owner) return null;
       return {
         id: stableAccountId(queryName, queryName, index),
         label: queryName,
         queryName,
         owner,
+        avatarUrl,
       };
     })
     .filter(Boolean);
@@ -469,6 +481,84 @@ function getAccountGroups() {
 function getAccountGroupMeta(group) {
   const queryNames = [...new Set(group.accounts.map((account) => account.queryName).filter(Boolean))];
   return `조회: ${queryNames.join(", ")}`;
+}
+
+function setOwnerHeading(heading, owner) {
+  heading.textContent = "";
+  const avatarUrl = getOwnerAvatarUrl(owner);
+
+  if (avatarUrl) {
+    const image = document.createElement("img");
+    image.className = "owner-avatar";
+    image.src = avatarUrl;
+    image.alt = "";
+    heading.append(image);
+  }
+
+  const name = document.createElement("span");
+  name.textContent = owner;
+  heading.append(name);
+}
+
+function getOwnerAvatarUrl(owner) {
+  return state.accounts.find((account) => account.owner === owner && account.avatarUrl)?.avatarUrl ?? "";
+}
+
+async function uploadProfileImage(row, file) {
+  if (!file) return;
+
+  if (!file.type.startsWith("image/")) {
+    setStatus("이미지 파일만 업로드할 수 있습니다.", "error");
+    return;
+  }
+
+  if (file.size > 4 * 1024 * 1024) {
+    setStatus("프로필 사진은 4MB 이하만 업로드할 수 있습니다.", "error");
+    return;
+  }
+
+  const preview = row.querySelector(".account-avatar-preview");
+  const avatarInput = row.querySelector('[data-field="avatarUrl"]');
+  const previousUrl = avatarInput.value;
+
+  try {
+    preview.src = await readFileAsDataUrl(file);
+    setStatus("프로필 사진 업로드 중", "loading");
+
+    const response = await fetch("/api/profile-image", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        fileName: file.name,
+        contentType: file.type,
+        dataUrl: preview.src,
+      }),
+    });
+    const payload = await response.json();
+
+    if (!response.ok) {
+      throw new Error(payload.error ?? "프로필 사진 업로드에 실패했습니다.");
+    }
+
+    avatarInput.value = payload.url;
+    preview.src = payload.url;
+    setStatus("프로필 사진 업로드 완료. 저장을 눌러 반영하세요.", "success");
+  } catch (error) {
+    avatarInput.value = previousUrl;
+    preview.src = previousUrl;
+    setStatus(error.message, "error");
+  }
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener("load", () => resolve(String(reader.result ?? "")));
+    reader.addEventListener("error", () => reject(new Error("이미지를 읽을 수 없습니다.")));
+    reader.readAsDataURL(file);
+  });
 }
 
 function uniqueCharacters(characters) {
@@ -605,6 +695,7 @@ function normalizeAccounts(accounts) {
         label: label || queryName,
         queryName,
         owner,
+        avatarUrl: String(account?.avatarUrl ?? "").trim(),
       };
     })
     .filter(Boolean);
