@@ -549,7 +549,7 @@ function getLevelTier(level) {
   if (level >= 1730) return "green";
   if (level >= 1720) return "blue";
   if (level >= 1710) return "low";
-  return "low";
+  return "base";
 }
 
 function createSkeletonRow() {

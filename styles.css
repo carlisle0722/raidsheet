@@ -14,7 +14,8 @@
   --tier-gold: #f0ce86;
   --tier-green: #a9d8bd;
   --tier-blue: #a9c9ec;
-  --tier-purple: #c7b7f2;
+  --tier-low: #cfd4dc;
+  --tier-base: #c7b7f2;
   --shadow: 0 16px 42px rgba(24, 31, 42, 0.08);
   font-family:
     Pretendard, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR",
@@ -323,7 +324,7 @@ h3:has(.owner-avatar) {
   align-items: center;
   min-height: 72px;
   padding: 10px;
-  border-inline: 5px solid var(--tier-purple);
+  border-inline: 5px solid var(--tier-base);
   border-radius: 6px;
   background: var(--surface);
 }
@@ -344,12 +345,12 @@ h3:has(.owner-avatar) {
   border-inline-color: var(--tier-blue);
 }
 
-.character-card[data-tier="gray"] {
-  border-inline-color: var(--line-strong);
+.character-card[data-tier="low"] {
+  border-inline-color: var(--tier-low);
 }
 
-.character-card[data-tier="low"] {
-  border-inline-color: var(--tier-purple);
+.character-card[data-tier="base"] {
+  border-inline-color: var(--tier-base);
 }
 
 .character-main,
@@ -613,7 +614,7 @@ h3:has(.owner-avatar) {
   align-items: center;
   min-height: 82px;
   padding: 12px 14px;
-  border-left: 6px solid var(--tier-purple);
+  border-left: 6px solid var(--tier-base);
   border-radius: 8px;
   background: var(--surface-soft);
 }
@@ -634,12 +635,12 @@ h3:has(.owner-avatar) {
   border-left-color: var(--tier-blue);
 }
 
-.raid-guide-card[data-tier="gray"] {
-  border-left-color: var(--line-strong);
+.raid-guide-card[data-tier="low"] {
+  border-left-color: var(--tier-low);
 }
 
-.raid-guide-card[data-tier="low"] {
-  border-left-color: var(--tier-purple);
+.raid-guide-card[data-tier="base"] {
+  border-left-color: var(--tier-base);
 }
 
 .raid-guide-card > strong {
