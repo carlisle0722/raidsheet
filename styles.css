@@ -250,17 +250,6 @@ h3:has(.owner-avatar) {
   box-shadow: none;
 }
 
-.tab-button.is-active::after {
-  position: absolute;
-  right: 18px;
-  bottom: 8px;
-  left: 18px;
-  height: 3px;
-  border-radius: 999px;
-  background: var(--accent);
-  content: "";
-}
-
 @media (max-width: 760px) {
   .tab-list {
     grid-template-columns: 1fr;
