@@ -5,6 +5,7 @@ import { extname, join, normalize, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import healthHandler from "./api/health.js";
 import rosterHandler from "./api/roster.js";
+import stateHandler from "./api/state.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const publicDir = __dirname;
@@ -29,6 +30,11 @@ const server = createServer(async (req, res) => {
 
     if (url.pathname === "/api/roster") {
       await rosterHandler(req, res);
+      return;
+    }
+
+    if (url.pathname === "/api/state") {
+      await stateHandler(req, res);
       return;
     }
 

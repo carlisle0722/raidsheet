@@ -19,6 +19,7 @@ const state = {
   rosters: [],
   assignments: loadAssignments(),
   isLoading: false,
+  isRemoteReady: false,
   lastUpdatedAt: null,
 };
 
@@ -46,7 +47,12 @@ elements.addAccountButton.addEventListener("click", addAccountEditorRow);
 elements.saveAccountsButton.addEventListener("click", saveAccountEditor);
 
 renderAll();
-loadRosters();
+initializeApp();
+
+async function initializeApp() {
+  await loadSheetState();
+  await loadRosters();
+}
 
 async function loadRosters(options = {}) {
   if (state.isLoading) return;
@@ -280,6 +286,7 @@ function addAssignment(character, owner) {
     character,
   });
   saveAssignments();
+  saveSheetState();
   renderAll();
 }
 
@@ -289,19 +296,25 @@ function moveAssignment(character, owner) {
   assignment.owner = owner;
   assignment.character = character;
   saveAssignments();
+  saveSheetState();
   renderAll();
 }
 
 function removeAssignment(key) {
   state.assignments = state.assignments.filter((assignment) => assignment.key !== key);
   saveAssignments();
+  saveSheetState();
   renderAll();
 }
 
 function pruneAssignments() {
   const knownKeys = new Set(getAllCharacters().map((character) => character.key));
+  const previousLength = state.assignments.length;
   state.assignments = state.assignments.filter((assignment) => knownKeys.has(assignment.key));
-  saveAssignments();
+  if (state.assignments.length !== previousLength) {
+    saveAssignments();
+    saveSheetState();
+  }
 }
 
 function openAccountEditor() {
@@ -349,6 +362,7 @@ function saveAccountEditor() {
 
   state.accounts = nextAccounts;
   saveAccounts();
+  saveSheetState();
   elements.accountsDialog.close();
   loadRosters({ refresh: true });
 }
@@ -461,6 +475,55 @@ function saveAssignments() {
   localStorage.setItem(storageKeys.assignments, JSON.stringify(state.assignments));
 }
 
+async function loadSheetState() {
+  try {
+    const response = await fetch("/api/state");
+
+    if (!response.ok) {
+      throw new Error("remote state unavailable");
+    }
+
+    const payload = await response.json();
+    const remoteAccounts = normalizeAccounts(payload.accounts);
+    const remoteAssignments = normalizeAssignments(payload.assignments);
+
+    state.accounts = remoteAccounts.length ? remoteAccounts : state.accounts;
+    if (Array.isArray(payload.assignments)) {
+      state.assignments = remoteAssignments;
+    }
+    state.isRemoteReady = true;
+
+    saveAccounts();
+    saveAssignments();
+    renderAll();
+
+    if (!payload.exists) {
+      saveSheetState();
+    }
+  } catch {
+    state.isRemoteReady = false;
+  }
+}
+
+async function saveSheetState() {
+  try {
+    const response = await fetch("/api/state", {
+      method: "PUT",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        accounts: state.accounts,
+        assignments: state.assignments,
+      }),
+    });
+
+    state.isRemoteReady = response.ok;
+  } catch {
+    state.isRemoteReady = false;
+  }
+}
+
 function readJson(key, fallback) {
   try {
     const value = localStorage.getItem(key);
@@ -485,6 +548,24 @@ function normalizeAccounts(accounts) {
         label: label || queryName,
         queryName,
         owner,
+      };
+    })
+    .filter(Boolean);
+}
+
+function normalizeAssignments(assignments) {
+  if (!Array.isArray(assignments)) return [];
+
+  return assignments
+    .map((assignment) => {
+      const key = String(assignment?.key ?? "").trim();
+      const owner = String(assignment?.owner ?? "").trim();
+      if (!key || !owner || !assignment?.character) return null;
+
+      return {
+        key,
+        owner,
+        character: assignment.character,
       };
     })
     .filter(Boolean);

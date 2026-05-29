@@ -3,6 +3,9 @@
   "functions": {
     "api/roster.js": {
       "maxDuration": 10
+    },
+    "api/state.js": {
+      "maxDuration": 10
     }
   },
   "rewrites": [
