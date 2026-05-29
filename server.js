@@ -3,8 +3,8 @@ import { readFile } from "node:fs/promises";
 import { existsSync, readFileSync } from "node:fs";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
-import { GET as healthGet } from "./api/health.js";
-import { GET as rosterGet } from "./api/roster.js";
+import healthHandler from "./api/health.js";
+import rosterHandler from "./api/roster.js";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const publicDir = join(__dirname, "public");
@@ -28,12 +28,12 @@ const server = createServer(async (req, res) => {
     const url = new URL(req.url ?? "/", `http://${req.headers.host}`);
 
     if (url.pathname === "/api/roster") {
-      await sendWebResponse(res, await rosterGet(createWebRequest(req)));
+      await rosterHandler(req, res);
       return;
     }
 
     if (url.pathname === "/api/health") {
-      await sendWebResponse(res, await healthGet(createWebRequest(req)));
+      healthHandler(req, res);
       return;
     }
 
@@ -76,35 +76,6 @@ async function serveStatic(pathname, res) {
     });
     res.end(fallback);
   }
-}
-
-function createWebRequest(req) {
-  return new Request(`http://${req.headers.host}${req.url}`, {
-    method: req.method,
-    headers: toWebHeaders(req.headers),
-  });
-}
-
-function toWebHeaders(nodeHeaders) {
-  const headers = new Headers();
-
-  for (const [key, value] of Object.entries(nodeHeaders)) {
-    if (Array.isArray(value)) {
-      headers.set(key, value.join(", "));
-    } else if (value !== undefined) {
-      headers.set(key, value);
-    }
-  }
-
-  return headers;
-}
-
-async function sendWebResponse(res, response) {
-  response.headers.forEach((value, key) => {
-    res.setHeader(key, value);
-  });
-  res.writeHead(response.status);
-  res.end(Buffer.from(await response.arrayBuffer()));
 }
 
 function sendJson(res, statusCode, payload) {

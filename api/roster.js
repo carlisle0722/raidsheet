@@ -16,37 +16,38 @@ const errorMessages = {
   504: "로스트아크 API 응답 시간이 초과되었습니다.",
 };
 
-export async function GET(request) {
+export default async function handler(req, res) {
   const apiKey = process.env.LOSTARK_API_KEY?.trim();
 
   if (!apiKey) {
-    return json(
-      {
-        error: "LOSTARK_API_KEY가 설정되지 않았습니다. Vercel 프로젝트 환경변수를 확인해 주세요.",
-      },
-      500,
-    );
+    sendJson(res, 500, {
+      error: "LOSTARK_API_KEY가 설정되지 않았습니다. Vercel 프로젝트 환경변수를 확인해 주세요.",
+    });
+    return;
   }
 
-  const url = new URL(request.url);
-  const characterName = url.searchParams.get("characterName")?.trim();
-  const forceRefresh = url.searchParams.get("refresh") === "1";
+  const requestUrl = new URL(req.url ?? "/api/roster", `https://${req.headers.host ?? "localhost"}`);
+  const characterName = String(req.query?.characterName ?? requestUrl.searchParams.get("characterName") ?? "").trim();
+  const forceRefresh = String(req.query?.refresh ?? requestUrl.searchParams.get("refresh") ?? "") === "1";
 
   if (!characterName) {
-    return json({ error: errorMessages[400] }, 400);
+    sendJson(res, 400, { error: errorMessages[400] });
+    return;
   }
 
   if (characterName.length > 20) {
-    return json({ error: "캐릭터명이 너무 깁니다." }, 400);
+    sendJson(res, 400, { error: "캐릭터명이 너무 깁니다." });
+    return;
   }
 
   const cacheKey = characterName.toLocaleLowerCase("ko-KR");
   const cached = cache.get(cacheKey);
   if (!forceRefresh && cached && Date.now() - cached.savedAt < cacheTtlMs) {
-    return json({
+    sendJson(res, 200, {
       ...cached.payload,
       cached: true,
     });
+    return;
   }
 
   const endpoint = `${apiBaseUrl}/characters/${encodeURIComponent(characterName)}/siblings`;
@@ -64,14 +65,12 @@ export async function GET(request) {
     });
   } catch (error) {
     const isTimeout = error?.name === "AbortError";
-    return json(
-      {
-        error: isTimeout
-          ? "로스트아크 API 응답 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요."
-          : "로스트아크 API에 연결하지 못했습니다. 네트워크 상태를 확인해 주세요.",
-      },
-      502,
-    );
+    sendJson(res, 502, {
+      error: isTimeout
+        ? "로스트아크 API 응답 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요."
+        : "로스트아크 API에 연결하지 못했습니다. 네트워크 상태를 확인해 주세요.",
+    });
+    return;
   } finally {
     clearTimeout(timeout);
   }
@@ -85,15 +84,13 @@ export async function GET(request) {
   const data = await readResponseBody(response);
 
   if (!response.ok) {
-    return json(
-      {
-        error: errorMessages[response.status] ?? "로스트아크 API 요청에 실패했습니다.",
-        status: response.status,
-        detail: data,
-        rateLimit,
-      },
-      response.status,
-    );
+    sendJson(res, response.status, {
+      error: errorMessages[response.status] ?? "로스트아크 API 요청에 실패했습니다.",
+      status: response.status,
+      detail: data,
+      rateLimit,
+    });
+    return;
   }
 
   const characters = Array.isArray(data) ? data : [];
@@ -115,11 +112,7 @@ export async function GET(request) {
     payload,
   });
 
-  return json(payload);
-}
-
-export default async function handler(request) {
-  return GET(request);
+  sendJson(res, 200, payload);
 }
 
 async function readResponseBody(response) {
@@ -170,11 +163,15 @@ function parseItemLevel(value) {
   return Number.isFinite(number) ? number : 0;
 }
 
-function json(payload, status = 200) {
-  return Response.json(payload, {
-    status,
-    headers: {
-      "cache-control": "no-store",
-    },
+function sendJson(res, statusCode, payload) {
+  if (typeof res.status === "function") {
+    res.status(statusCode).json(payload);
+    return;
+  }
+
+  res.writeHead(statusCode, {
+    "content-type": "application/json; charset=utf-8",
+    "cache-control": "no-store",
   });
+  res.end(JSON.stringify(payload));
 }
