@@ -1,63 +1,67 @@
+const targetServer = "카단";
+
+const members = [
+  { id: "kkul", label: "꿀숑", queryName: "꿀숑" },
+  { id: "mineu", label: "미느몬", queryName: "미느몬" },
+  { id: "samdae", label: "김삼대", queryName: "김삼대" },
+  { id: "badeul", label: "바들바글바들", queryName: "바들바글바들" },
+  { id: "ddiddu", label: "디뚜뚜뚜", queryName: "디뚜뚜뚜" },
+];
+
 const state = {
-  lastCharacterName: "",
-  roster: null,
+  rosters: [],
+  isLoading: false,
+  lastUpdatedAt: null,
 };
 
 const elements = {
-  form: document.querySelector("#search-form"),
-  input: document.querySelector("#character-name"),
-  searchButton: document.querySelector("#search-button"),
   refreshButton: document.querySelector("#refresh-button"),
   status: document.querySelector("#status"),
-  result: document.querySelector("#result"),
-  resultTitle: document.querySelector("#result-title"),
-  resultLabel: document.querySelector("#result-label"),
-  metricTotal: document.querySelector("#metric-total"),
-  metricHighestLevel: document.querySelector("#metric-highest-level"),
-  metricServer: document.querySelector("#metric-server"),
-  serverFilter: document.querySelector("#server-filter"),
-  classFilter: document.querySelector("#class-filter"),
-  sortSelect: document.querySelector("#sort-select"),
-  chips: document.querySelector("#chips"),
-  characterGrid: document.querySelector("#character-grid"),
-  emptyResult: document.querySelector("#empty-result"),
-  template: document.querySelector("#character-card-template"),
+  rosterBoard: document.querySelector("#roster-board"),
+  characterTotal: document.querySelector("#character-total"),
+  highestLevel: document.querySelector("#highest-level"),
+  memberCount: document.querySelector("#member-count"),
+  memberTemplate: document.querySelector("#member-column-template"),
+  characterTemplate: document.querySelector("#character-row-template"),
 };
 
-elements.form.addEventListener("submit", (event) => {
-  event.preventDefault();
-  search(elements.input.value);
-});
+elements.memberCount.textContent = `${members.length}명`;
+elements.refreshButton.addEventListener("click", () => loadRosters({ refresh: true }));
 
-elements.refreshButton.addEventListener("click", () => {
-  if (state.lastCharacterName) {
-    search(state.lastCharacterName, { refresh: true });
-  }
-});
+renderLoadingColumns();
+loadRosters();
 
-for (const control of [elements.serverFilter, elements.classFilter, elements.sortSelect]) {
-  control.addEventListener("change", renderCharacters);
-}
-
-const recentSearch = localStorage.getItem("lostark:lastCharacterName");
-if (recentSearch) {
-  elements.input.value = recentSearch;
-}
-
-async function search(characterName, options = {}) {
-  const trimmedName = characterName.trim();
-  if (!trimmedName) {
-    setStatus("캐릭터명을 입력해 주세요.", "error");
-    elements.input.focus();
+async function loadRosters(options = {}) {
+  if (state.isLoading) {
     return;
   }
 
-  state.lastCharacterName = trimmedName;
-  localStorage.setItem("lostark:lastCharacterName", trimmedName);
-  setLoading(true);
-  setStatus("원정대 정보를 불러오는 중입니다.", "loading");
+  state.isLoading = true;
+  setStatus(options.refresh ? "새로 조회 중" : "자동 조회 중", "loading");
+  elements.refreshButton.disabled = true;
 
-  const params = new URLSearchParams({ characterName: trimmedName });
+  if (!state.rosters.length) {
+    renderLoadingColumns();
+  }
+
+  const results = await Promise.all(members.map((member) => fetchMemberRoster(member, options)));
+
+  state.rosters = results;
+  state.lastUpdatedAt = new Date();
+  state.isLoading = false;
+  elements.refreshButton.disabled = false;
+
+  renderBoard();
+  renderSummary();
+  renderStatus();
+}
+
+async function fetchMemberRoster(member, options = {}) {
+  const params = new URLSearchParams({
+    characterName: member.queryName,
+    serverName: targetServer,
+  });
+
   if (options.refresh) {
     params.set("refresh", "1");
   }
@@ -67,127 +71,141 @@ async function search(characterName, options = {}) {
     const payload = await response.json();
 
     if (!response.ok) {
-      throw new Error(payload.error ?? "검색에 실패했습니다.");
+      throw new Error(payload.error ?? "조회에 실패했습니다.");
     }
 
-    state.roster = payload;
-    populateFilters(payload.characters);
-    renderSummary(payload);
-    renderDistribution(payload.summary);
-    renderCharacters();
-    elements.result.hidden = false;
-
-    const suffix = payload.cached ? "캐시된 결과입니다." : formatRateLimit(payload.rateLimit);
-    setStatus(`${payload.total}명의 캐릭터를 찾았습니다. ${suffix}`.trim(), "success");
+    return {
+      member,
+      ok: true,
+      cached: payload.cached,
+      rateLimit: payload.rateLimit,
+      characters: payload.characters,
+      total: payload.total,
+    };
   } catch (error) {
-    state.roster = null;
-    elements.result.hidden = true;
-    setStatus(error.message, "error");
-  } finally {
-    setLoading(false);
+    return {
+      member,
+      ok: false,
+      cached: false,
+      error: error.message,
+      characters: [],
+      total: 0,
+    };
   }
 }
 
-function renderSummary(payload) {
-  const highest = payload.summary.highest;
-  const topServer = payload.summary.servers[0];
-
-  elements.resultLabel.textContent = `${payload.queriedCharacterName} 기준`;
-  elements.resultTitle.textContent = "원정대 캐릭터";
-  elements.metricTotal.textContent = payload.total.toLocaleString("ko-KR");
-  elements.metricHighestLevel.textContent = highest ? highest.itemAvgLevel : "-";
-  elements.metricServer.textContent = topServer ? `${topServer.name} ${topServer.count}명` : "-";
-}
-
-function renderDistribution(summary) {
-  const serverChips = summary.servers.map((item) => ({ ...item, type: "서버" }));
-  const classChips = summary.classes.slice(0, 8).map((item) => ({ ...item, type: "직업" }));
-  const chips = [...serverChips, ...classChips];
-
-  elements.chips.replaceChildren(
-    ...chips.map((item) => {
-      const chip = document.createElement("span");
-      chip.className = "chip";
-      chip.textContent = `${item.type} ${item.name} ${item.count}`;
-      return chip;
+function renderLoadingColumns() {
+  elements.rosterBoard.replaceChildren(
+    ...members.map((member) => {
+      const column = createMemberColumn({
+        member,
+        ok: true,
+        loading: true,
+        characters: [],
+      });
+      return column;
     }),
   );
 }
 
-function renderCharacters() {
-  if (!state.roster) {
+function renderBoard() {
+  const columns = state.rosters.map((roster) => createMemberColumn(roster));
+  elements.rosterBoard.replaceChildren(...columns);
+}
+
+function createMemberColumn(roster) {
+  const fragment = elements.memberTemplate.content.cloneNode(true);
+  const column = fragment.querySelector(".member-column");
+  const title = column.querySelector("h3");
+  const queryName = column.querySelector(".query-name");
+  const count = column.querySelector(".member-count");
+  const list = column.querySelector(".character-list");
+
+  title.textContent = roster.member.label;
+  queryName.textContent = roster.member.queryName;
+
+  if (roster.loading) {
+    count.textContent = "-";
+    list.replaceChildren(...Array.from({ length: 6 }, createSkeletonRow));
+    return column;
+  }
+
+  if (!roster.ok) {
+    count.textContent = "오류";
+    const message = document.createElement("p");
+    message.className = "column-message is-error";
+    message.textContent = roster.error;
+    list.replaceChildren(message);
+    return column;
+  }
+
+  const characters = [...roster.characters].sort(
+    (a, b) => b.itemLevelNumber - a.itemLevelNumber || a.characterName.localeCompare(b.characterName, "ko-KR"),
+  );
+
+  count.textContent = `${characters.length}개`;
+
+  if (!characters.length) {
+    const message = document.createElement("p");
+    message.className = "column-message";
+    message.textContent = "카단 캐릭터 없음";
+    list.replaceChildren(message);
+    return column;
+  }
+
+  list.replaceChildren(...characters.map(createCharacterRow));
+  return column;
+}
+
+function createCharacterRow(character) {
+  const fragment = elements.characterTemplate.content.cloneNode(true);
+  const row = fragment.querySelector(".character-row");
+
+  row.dataset.tier = getLevelTier(character.itemLevelNumber);
+  row.querySelector(".character-name").textContent = character.characterName;
+  row.querySelector(".class-name").textContent = character.characterClassName;
+  row.querySelector(".combat-level").textContent = character.characterLevel
+    ? `전투 Lv.${character.characterLevel}`
+    : "전투 Lv.-";
+  row.querySelector(".item-level").textContent = character.itemAvgLevel;
+
+  return row;
+}
+
+function createSkeletonRow() {
+  const row = document.createElement("div");
+  row.className = "character-row is-skeleton";
+  row.innerHTML = '<span></span><span></span>';
+  return row;
+}
+
+function renderSummary() {
+  const characters = state.rosters.flatMap((roster) => roster.characters);
+  const highest = characters.reduce(
+    (best, character) => (!best || character.itemLevelNumber > best.itemLevelNumber ? character : best),
+    null,
+  );
+
+  elements.characterTotal.textContent = characters.length.toLocaleString("ko-KR");
+  elements.highestLevel.textContent = highest ? highest.itemAvgLevel : "-";
+}
+
+function renderStatus() {
+  const failed = state.rosters.filter((roster) => !roster.ok);
+  if (failed.length) {
+    setStatus(`${failed.length}명 조회 실패`, "error");
     return;
   }
 
-  const server = elements.serverFilter.value;
-  const characterClass = elements.classFilter.value;
-  const sortBy = elements.sortSelect.value;
+  const total = state.rosters.reduce((sum, roster) => sum + roster.characters.length, 0);
+  const cachedCount = state.rosters.filter((roster) => roster.cached).length;
+  const time = state.lastUpdatedAt?.toLocaleTimeString("ko-KR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const cacheText = cachedCount ? `, 캐시 ${cachedCount}건` : "";
 
-  const filtered = state.roster.characters
-    .filter((character) => server === "all" || character.serverName === server)
-    .filter((character) => characterClass === "all" || character.characterClassName === characterClass)
-    .sort((a, b) => compareCharacters(a, b, sortBy));
-
-  const cards = filtered.map(createCharacterCard);
-  elements.characterGrid.replaceChildren(...cards);
-  elements.emptyResult.hidden = filtered.length > 0;
-}
-
-function createCharacterCard(character) {
-  const fragment = elements.template.content.cloneNode(true);
-  const card = fragment.querySelector(".character-card");
-  card.querySelector(".server").textContent = character.serverName;
-  card.querySelector(".combat-level").textContent = character.characterLevel ? `전투 Lv.${character.characterLevel}` : "전투 Lv.-";
-  card.querySelector("h3").textContent = character.characterName;
-  card.querySelector(".class-name").textContent = character.characterClassName;
-  card.querySelector(".item-level strong").textContent = character.itemAvgLevel;
-  return card;
-}
-
-function populateFilters(characters) {
-  const servers = unique(characters.map((character) => character.serverName));
-  const classes = unique(characters.map((character) => character.characterClassName));
-
-  replaceOptions(elements.serverFilter, servers);
-  replaceOptions(elements.classFilter, classes);
-  elements.sortSelect.value = "level-desc";
-}
-
-function replaceOptions(select, values) {
-  select.replaceChildren(new Option("전체", "all"));
-  for (const value of values) {
-    select.add(new Option(value, value));
-  }
-}
-
-function compareCharacters(a, b, sortBy) {
-  if (sortBy === "level-asc") {
-    return a.itemLevelNumber - b.itemLevelNumber || byName(a, b);
-  }
-
-  if (sortBy === "name-asc") {
-    return byName(a, b);
-  }
-
-  if (sortBy === "server-asc") {
-    return a.serverName.localeCompare(b.serverName, "ko-KR") || byName(a, b);
-  }
-
-  return b.itemLevelNumber - a.itemLevelNumber || byName(a, b);
-}
-
-function byName(a, b) {
-  return a.characterName.localeCompare(b.characterName, "ko-KR");
-}
-
-function unique(values) {
-  return [...new Set(values)].sort((a, b) => a.localeCompare(b, "ko-KR"));
-}
-
-function setLoading(isLoading) {
-  elements.searchButton.disabled = isLoading;
-  elements.refreshButton.disabled = isLoading;
-  elements.searchButton.textContent = isLoading ? "검색 중" : "검색";
+  setStatus(`${time} 기준 ${total}개 조회${cacheText}`, "success");
 }
 
 function setStatus(message, tone = "neutral") {
@@ -195,10 +213,11 @@ function setStatus(message, tone = "neutral") {
   elements.status.dataset.tone = tone;
 }
 
-function formatRateLimit(rateLimit) {
-  if (!rateLimit?.remaining) {
-    return "";
-  }
-
-  return `남은 요청 ${rateLimit.remaining}/${rateLimit.limit ?? "100"}`;
+function getLevelTier(level) {
+  if (level >= 1750) return "ancient";
+  if (level >= 1740) return "red";
+  if (level >= 1730) return "green";
+  if (level >= 1720) return "blue";
+  if (level >= 1710) return "gray";
+  return "low";
 }

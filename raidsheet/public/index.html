@@ -3,93 +3,85 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>로스트아크 원정대 검색</title>
+    <title>레이드 시트</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <main class="shell">
-      <section class="search-panel" aria-labelledby="page-title">
+    <main class="app-shell">
+      <header class="topbar">
         <div>
           <p class="eyebrow">Lost Ark Open API</p>
-          <h1 id="page-title">원정대 캐릭터 검색</h1>
+          <h1>레이드 시트</h1>
         </div>
+        <button id="refresh-button" class="primary-button" type="button">
+          재조회
+        </button>
+      </header>
 
-        <form id="search-form" class="search-form" autocomplete="off">
-          <label class="sr-only" for="character-name">캐릭터명</label>
-          <input id="character-name" name="characterName" type="text" placeholder="캐릭터명을 입력하세요" required />
-          <button id="search-button" type="submit">검색</button>
-        </form>
+      <nav class="tabs" aria-label="시트 탭">
+        <button class="tab is-active" type="button">캐릭터 현황</button>
+        <button class="tab" type="button" disabled>레이드 배치</button>
+        <button class="tab" type="button" disabled>누락 확인</button>
+      </nav>
 
-        <div id="status" class="status" role="status" aria-live="polite"></div>
+      <section class="summary-strip" aria-label="조회 요약">
+        <div class="summary-item">
+          <span>서버</span>
+          <strong id="server-label">카단</strong>
+        </div>
+        <div class="summary-item">
+          <span>조회 대상</span>
+          <strong id="member-count">5명</strong>
+        </div>
+        <div class="summary-item">
+          <span>카단 캐릭터</span>
+          <strong id="character-total">-</strong>
+        </div>
+        <div class="summary-item">
+          <span>최고 레벨</span>
+          <strong id="highest-level">-</strong>
+        </div>
       </section>
 
-      <section id="result" class="result" hidden>
-        <div class="result-header">
+      <section class="board-section" aria-labelledby="board-title">
+        <div class="section-heading">
           <div>
-            <p id="result-label" class="eyebrow">검색 결과</p>
-            <h2 id="result-title">원정대</h2>
+            <p class="eyebrow">Roster</p>
+            <h2 id="board-title">캐릭터 현황</h2>
           </div>
-          <button id="refresh-button" class="ghost-button" type="button">새로고침</button>
-        </div>
-
-        <div class="metrics" aria-label="원정대 요약">
-          <div class="metric">
-            <span>캐릭터</span>
-            <strong id="metric-total">0</strong>
-          </div>
-          <div class="metric">
-            <span>최고 레벨</span>
-            <strong id="metric-highest-level">-</strong>
-          </div>
-          <div class="metric">
-            <span>대표 서버</span>
-            <strong id="metric-server">-</strong>
+          <div id="status" class="status" role="status" aria-live="polite">
+            자동 조회 대기
           </div>
         </div>
 
-        <div class="controls" aria-label="결과 필터">
-          <label>
-            서버
-            <select id="server-filter">
-              <option value="all">전체</option>
-            </select>
-          </label>
-          <label>
-            직업
-            <select id="class-filter">
-              <option value="all">전체</option>
-            </select>
-          </label>
-          <label>
-            정렬
-            <select id="sort-select">
-              <option value="level-desc">아이템 레벨 높은 순</option>
-              <option value="level-asc">아이템 레벨 낮은 순</option>
-              <option value="name-asc">캐릭터명 가나다순</option>
-              <option value="server-asc">서버명 가나다순</option>
-            </select>
-          </label>
-        </div>
-
-        <div id="chips" class="chips" aria-label="원정대 분포"></div>
-        <div id="character-grid" class="character-grid"></div>
-        <p id="empty-result" class="empty" hidden>필터에 맞는 캐릭터가 없습니다.</p>
+        <div id="roster-board" class="roster-board" aria-live="polite"></div>
       </section>
     </main>
 
-    <template id="character-card-template">
-      <article class="character-card">
-        <div class="card-topline">
-          <span class="server"></span>
-          <span class="combat-level"></span>
+    <template id="member-column-template">
+      <article class="member-column">
+        <div class="member-heading">
+          <div>
+            <h3></h3>
+            <span class="query-name"></span>
+          </div>
+          <strong class="member-count">-</strong>
         </div>
-        <h3></h3>
-        <div class="class-name"></div>
-        <div class="item-level">
-          <span>아이템 레벨</span>
-          <strong></strong>
-        </div>
+        <div class="character-list"></div>
       </article>
+    </template>
+
+    <template id="character-row-template">
+      <div class="character-row">
+        <div class="character-main">
+          <strong class="character-name"></strong>
+          <span class="class-name"></span>
+        </div>
+        <div class="character-meta">
+          <span class="combat-level"></span>
+          <strong class="item-level"></strong>
+        </div>
+      </div>
     </template>
 
     <script src="/app.js" type="module"></script>

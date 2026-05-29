@@ -5,15 +5,15 @@ const cache = new Map();
 
 const errorMessages = {
   400: "캐릭터명을 입력해 주세요.",
-  401: "API 키 인증에 실패했습니다. Vercel 환경변수의 LOSTARK_API_KEY 값을 확인해 주세요.",
-  403: "API 접근 권한이 없습니다.",
+  401: "Lost Ark API 인증에 실패했습니다. Vercel 환경 변수의 LOSTARK_API_KEY 값을 확인해 주세요.",
+  403: "Lost Ark API 접근 권한이 없습니다.",
   404: "해당 캐릭터를 찾지 못했습니다.",
   415: "요청 형식이 올바르지 않습니다.",
   429: "요청 제한에 도달했습니다. 잠시 후 다시 시도해 주세요.",
-  500: "로스트아크 API 서버 내부 오류입니다.",
-  502: "로스트아크 API 게이트웨이 오류입니다.",
-  503: "로스트아크 API가 점검 중이거나 일시적으로 사용할 수 없습니다.",
-  504: "로스트아크 API 응답 시간이 초과되었습니다.",
+  500: "Lost Ark API 서버 오류입니다.",
+  502: "Lost Ark API 게이트웨이 오류입니다.",
+  503: "Lost Ark API가 점검 중이거나 일시적으로 사용할 수 없습니다.",
+  504: "Lost Ark API 응답 시간이 초과되었습니다.",
 };
 
 export default async function handler(req, res) {
@@ -21,13 +21,14 @@ export default async function handler(req, res) {
 
   if (!apiKey) {
     sendJson(res, 500, {
-      error: "LOSTARK_API_KEY가 설정되지 않았습니다. Vercel 프로젝트 환경변수를 확인해 주세요.",
+      error: "LOSTARK_API_KEY가 설정되지 않았습니다. Vercel 프로젝트 환경 변수를 확인해 주세요.",
     });
     return;
   }
 
   const requestUrl = new URL(req.url ?? "/api/roster", `https://${req.headers.host ?? "localhost"}`);
   const characterName = String(req.query?.characterName ?? requestUrl.searchParams.get("characterName") ?? "").trim();
+  const serverName = String(req.query?.serverName ?? requestUrl.searchParams.get("serverName") ?? "").trim();
   const forceRefresh = String(req.query?.refresh ?? requestUrl.searchParams.get("refresh") ?? "") === "1";
 
   if (!characterName) {
@@ -40,7 +41,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  const cacheKey = characterName.toLocaleLowerCase("ko-KR");
+  const cacheKey = `${characterName.toLocaleLowerCase("ko-KR")}:${serverName}`;
   const cached = cache.get(cacheKey);
   if (!forceRefresh && cached && Date.now() - cached.savedAt < cacheTtlMs) {
     sendJson(res, 200, {
@@ -67,8 +68,8 @@ export default async function handler(req, res) {
     const isTimeout = error?.name === "AbortError";
     sendJson(res, 502, {
       error: isTimeout
-        ? "로스트아크 API 응답 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요."
-        : "로스트아크 API에 연결하지 못했습니다. 네트워크 상태를 확인해 주세요.",
+        ? "Lost Ark API 응답 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요."
+        : "Lost Ark API에 연결하지 못했습니다. 네트워크 상태를 확인해 주세요.",
     });
     return;
   } finally {
@@ -85,7 +86,7 @@ export default async function handler(req, res) {
 
   if (!response.ok) {
     sendJson(res, response.status, {
-      error: errorMessages[response.status] ?? "로스트아크 API 요청에 실패했습니다.",
+      error: errorMessages[response.status] ?? "Lost Ark API 요청에 실패했습니다.",
       status: response.status,
       detail: data,
       rateLimit,
@@ -94,12 +95,17 @@ export default async function handler(req, res) {
   }
 
   const characters = Array.isArray(data) ? data : [];
-  const normalizedCharacters = characters
+  let normalizedCharacters = characters
     .map(normalizeCharacter)
     .sort((a, b) => b.itemLevelNumber - a.itemLevelNumber || a.characterName.localeCompare(b.characterName, "ko-KR"));
 
+  if (serverName) {
+    normalizedCharacters = normalizedCharacters.filter((character) => character.serverName === serverName);
+  }
+
   const payload = {
     queriedCharacterName: characterName,
+    serverName: serverName || null,
     total: normalizedCharacters.length,
     characters: normalizedCharacters,
     summary: summarizeRoster(normalizedCharacters),
@@ -153,8 +159,12 @@ function summarizeRoster(characters) {
 
   return {
     highest,
-    classes: Array.from(classCounts, ([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "ko-KR")),
-    servers: Array.from(serverCounts, ([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "ko-KR")),
+    classes: Array.from(classCounts, ([name, count]) => ({ name, count })).sort(
+      (a, b) => b.count - a.count || a.name.localeCompare(b.name, "ko-KR"),
+    ),
+    servers: Array.from(serverCounts, ([name, count]) => ({ name, count })).sort(
+      (a, b) => b.count - a.count || a.name.localeCompare(b.name, "ko-KR"),
+    ),
   };
 }
 
