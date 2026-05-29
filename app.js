@@ -54,6 +54,8 @@ const elements = {
   assignmentBoard: document.querySelector("#assignment-board"),
   rosterBoard: document.querySelector("#roster-board"),
   assignedRosterBoard: document.querySelector("#assigned-roster-board"),
+  tabButtons: [...document.querySelectorAll("[data-tab-target]")],
+  tabPanels: [...document.querySelectorAll(".tab-panel")],
   ownerCount: document.querySelector("#owner-count"),
   characterTotal: document.querySelector("#character-total"),
   assignedTotal: document.querySelector("#assigned-total"),
@@ -68,6 +70,9 @@ elements.editAccountsButton.addEventListener("click", openAccountEditor);
 elements.openRosterButton.addEventListener("click", openRosterDialog);
 elements.addAccountButton.addEventListener("click", addAccountEditorRow);
 elements.saveAccountsButton.addEventListener("click", saveAccountEditor);
+for (const button of elements.tabButtons) {
+  button.addEventListener("click", () => activateTab(button.dataset.tabTarget));
+}
 
 renderAll();
 initializeApp();
@@ -381,6 +386,20 @@ function openAccountEditor() {
 
 function openRosterDialog() {
   elements.rosterDialog.showModal();
+}
+
+function activateTab(panelId) {
+  for (const button of elements.tabButtons) {
+    const isActive = button.dataset.tabTarget === panelId;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-selected", String(isActive));
+  }
+
+  for (const panel of elements.tabPanels) {
+    const isActive = panel.id === panelId;
+    panel.classList.toggle("is-active", isActive);
+    panel.hidden = !isActive;
+  }
 }
 
 function addAccountEditorRow(account = {}) {
