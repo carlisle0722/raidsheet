@@ -57,6 +57,7 @@ button:disabled {
 .topbar,
 .section-heading,
 .top-actions,
+.section-actions,
 .dialog-heading,
 .dialog-heading-actions,
 .dialog-actions {
@@ -253,6 +254,14 @@ h3:has(.owner-avatar) {
 
 .planner-section {
   padding: 18px;
+  box-shadow: var(--shadow);
+}
+
+.raid-planner-section {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
   box-shadow: var(--shadow);
 }
 
@@ -478,6 +487,168 @@ h3:has(.owner-avatar) {
   color: var(--danger);
 }
 
+.raid-planner-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.raid-analysis-card {
+  position: relative;
+  min-height: 112px;
+  padding: 12px 44px 12px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.raid-analysis-card.has-items {
+  border-color: rgba(180, 59, 69, 0.24);
+  background: rgba(180, 59, 69, 0.04);
+}
+
+.raid-analysis-card h3 {
+  font-size: 0.95rem;
+}
+
+.raid-analysis-card > strong {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  min-width: 28px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: var(--accent-strong);
+  background: rgba(47, 111, 106, 0.08);
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+.raid-analysis-card.has-items > strong {
+  color: var(--danger);
+  background: rgba(180, 59, 69, 0.1);
+}
+
+.raid-analysis-card ul {
+  display: grid;
+  gap: 4px;
+  margin: 10px 0 0;
+  padding: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 750;
+  line-height: 1.35;
+  list-style: none;
+}
+
+.raid-planner-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.raid-planner-table {
+  width: 100%;
+  min-width: 920px;
+  border-collapse: collapse;
+}
+
+.raid-planner-table th,
+.raid-planner-table td {
+  height: 46px;
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  padding: 6px;
+  vertical-align: middle;
+}
+
+.raid-planner-table th {
+  color: var(--ink);
+  background: #fffbe6;
+  font-size: 0.86rem;
+  font-weight: 900;
+  text-align: center;
+}
+
+.raid-planner-table th:first-child,
+.raid-planner-table td:first-child {
+  width: 58px;
+  text-align: center;
+}
+
+.raid-planner-table th:nth-child(2),
+.raid-planner-table td:nth-child(2) {
+  width: 170px;
+}
+
+.raid-planner-table th:last-child,
+.raid-planner-table td:last-child {
+  width: 52px;
+  border-right: 0;
+  text-align: center;
+}
+
+.raid-planner-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.raid-name-cell {
+  display: grid;
+  gap: 5px;
+}
+
+.raid-name-select,
+.raid-name-input,
+.raid-character-select {
+  width: 100%;
+  min-height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink);
+  background: var(--surface);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.raid-planner-table td.is-extra-raid .raid-character-select {
+  border-color: rgba(25, 29, 36, 0.32);
+  font-weight: 950;
+}
+
+.raid-planner-table td.is-excluded-raid .raid-character-select {
+  border-color: rgba(180, 59, 69, 0.38);
+  color: var(--danger);
+  background: rgba(180, 59, 69, 0.06);
+}
+
+.raid-planner-table td.is-duplicate-raid .raid-character-select {
+  border-color: rgba(47, 111, 106, 0.42);
+  color: var(--accent-strong);
+  background: rgba(47, 111, 106, 0.09);
+}
+
+.raid-excluded-cell input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
+.raid-row-actions .icon-button {
+  width: 30px;
+  height: 30px;
+  color: var(--danger);
+}
+
+.raid-empty-cell {
+  height: 120px;
+  color: var(--muted);
+  background: var(--surface-soft);
+  font-weight: 800;
+  text-align: center;
+}
+
 .empty-section {
   min-height: 260px;
   padding: 18px;
@@ -621,6 +792,7 @@ h3:has(.owner-avatar) {
 
   .topbar,
   .section-heading,
+  .section-actions,
   .dialog-heading,
   .dialog-heading-actions,
   .dialog-actions {
@@ -645,7 +817,8 @@ h3:has(.owner-avatar) {
   }
 
   .summary-strip,
-  .account-row {
+  .account-row,
+  .raid-planner-summary {
     grid-template-columns: 1fr;
   }
 

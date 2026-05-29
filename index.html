@@ -60,9 +60,21 @@
         </div>
 
         <div id="raid-panel" class="tab-panel" role="tabpanel" aria-labelledby="raid-tab" hidden>
-          <section class="empty-section" aria-labelledby="raid-title">
-            <div class="section-heading"><div><p class="eyebrow">Raid Assignment</p><h2 id="raid-title">레이드 편성</h2></div></div>
-            <div class="empty-state">아직 표시할 레이드 편성이 없습니다.</div>
+          <section class="raid-planner-section" aria-labelledby="raid-title">
+            <div class="section-heading">
+              <div><p class="eyebrow">Raid Assignment</p><h2 id="raid-title">레이드 편성</h2></div>
+              <div class="section-actions">
+                <button id="add-raid-row-button" class="secondary-button" type="button">레이드 추가</button>
+                <button id="save-raid-plan-button" class="primary-button" type="button">저장</button>
+              </div>
+            </div>
+            <div class="raid-planner-summary" id="raid-plan-summary" aria-live="polite"></div>
+            <div class="raid-planner-wrap">
+              <table class="raid-planner-table">
+                <thead id="raid-plan-head"></thead>
+                <tbody id="raid-plan-body"></tbody>
+              </table>
+            </div>
           </section>
         </div>
 
