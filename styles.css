@@ -14,7 +14,7 @@
   --tier-gold: #f0ce86;
   --tier-green: #a9d8bd;
   --tier-blue: #a9c9ec;
-  --tier-gray: #cfd4dc;
+  --tier-purple: #c7b7f2;
   --shadow: 0 16px 42px rgba(24, 31, 42, 0.08);
   font-family:
     Pretendard, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR",
@@ -323,29 +323,33 @@ h3:has(.owner-avatar) {
   align-items: center;
   min-height: 72px;
   padding: 10px;
-  border-left: 5px solid var(--tier-gray);
+  border-inline: 5px solid var(--tier-purple);
   border-radius: 6px;
   background: var(--surface);
 }
 
 .character-card[data-tier="ancient"] {
-  border-left-color: var(--tier-red);
+  border-inline-color: var(--tier-red);
 }
 
 .character-card[data-tier="red"] {
-  border-left-color: var(--tier-gold);
+  border-inline-color: var(--tier-gold);
 }
 
 .character-card[data-tier="green"] {
-  border-left-color: var(--tier-green);
+  border-inline-color: var(--tier-green);
 }
 
 .character-card[data-tier="blue"] {
-  border-left-color: var(--tier-blue);
+  border-inline-color: var(--tier-blue);
+}
+
+.character-card[data-tier="gray"] {
+  border-inline-color: var(--tier-purple);
 }
 
 .character-card[data-tier="low"] {
-  border-left-color: var(--line-strong);
+  border-inline-color: var(--line-strong);
 }
 
 .character-main,
@@ -514,7 +518,7 @@ h3:has(.owner-avatar) {
 
 
 .character-card.is-skeleton {
-  border-left-color: var(--line);
+  border-inline-color: var(--line);
 }
 
 .character-card.is-skeleton span {
@@ -609,33 +613,33 @@ h3:has(.owner-avatar) {
   align-items: center;
   min-height: 82px;
   padding: 12px 14px;
-  border-left: 6px solid var(--tier-gray);
+  border-inline: 6px solid var(--tier-purple);
   border-radius: 8px;
   background: var(--surface-soft);
 }
 
 .raid-guide-card[data-tier="ancient"] {
-  border-left-color: var(--tier-red);
+  border-inline-color: var(--tier-red);
 }
 
 .raid-guide-card[data-tier="red"] {
-  border-left-color: var(--tier-gold);
+  border-inline-color: var(--tier-gold);
 }
 
 .raid-guide-card[data-tier="green"] {
-  border-left-color: var(--tier-green);
+  border-inline-color: var(--tier-green);
 }
 
 .raid-guide-card[data-tier="blue"] {
-  border-left-color: var(--tier-blue);
+  border-inline-color: var(--tier-blue);
 }
 
 .raid-guide-card[data-tier="gray"] {
-  border-left-color: var(--tier-gray);
+  border-inline-color: var(--tier-purple);
 }
 
 .raid-guide-card[data-tier="low"] {
-  border-left-color: var(--line-strong);
+  border-inline-color: var(--line-strong);
 }
 
 .raid-guide-card > strong {
