@@ -4,8 +4,13 @@ const sheetId = "default";
 
 export default async function handler(req, res) {
   const method = req.method ?? "GET";
+  const databaseUrl =
+    process.env.DATABASE_URL ??
+    process.env.DATABASE_URL_URL ??
+    process.env.POSTGRES_URL ??
+    process.env.POSTGRES_PRISMA_URL;
 
-  if (!process.env.DATABASE_URL) {
+  if (!databaseUrl) {
     sendJson(res, 503, {
       error: "DATABASE_URL이 설정되지 않았습니다.",
     });
@@ -20,7 +25,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const sql = neon(process.env.DATABASE_URL);
+    const sql = neon(databaseUrl);
     await ensureTable(sql);
 
     if (method === "GET") {
