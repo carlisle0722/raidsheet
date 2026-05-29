@@ -232,7 +232,7 @@ function createLoadingSourceColumn(group) {
   return column;
 }
 
-function createCharacterCard(character, mode, assignedOwner = "") {
+function createCharacterCard(character, mode) {
   const fragment = elements.characterTemplate.content.cloneNode(true);
   const card = fragment.querySelector(".character-card");
   const actions = card.querySelector(".character-actions");
@@ -241,11 +241,7 @@ function createCharacterCard(character, mode, assignedOwner = "") {
   card.dataset.tier = getLevelTier(character.itemLevelNumber);
   card.querySelector(".character-name").textContent = character.characterName;
   card.querySelector(".class-name").textContent = character.characterClassName;
-  card.querySelector(".source-owner").textContent = character.sourceAccountLabel
-    ? character.sourceAccountLabel === character.defaultOwner
-      ? character.sourceAccountLabel
-      : `${character.sourceAccountLabel} · ${character.defaultOwner}`
-    : character.serverName;
+  card.querySelector(".source-owner").textContent = mode === "assigned" ? "" : character.sourceAccountLabel;
   card.querySelector(".item-level").textContent = character.itemAvgLevel;
 
   if (mode === "assigned") {

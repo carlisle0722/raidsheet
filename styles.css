@@ -290,6 +290,7 @@ h3 {
 }
 
 .character-card {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
@@ -348,6 +349,10 @@ h3 {
   display: block;
 }
 
+.source-owner:empty {
+  display: none;
+}
+
 .item-level {
   display: block;
   margin-top: 3px;
@@ -362,7 +367,14 @@ h3 {
 }
 
 .assignment-list .character-actions {
-  align-items: center;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: block;
+}
+
+.assignment-list .character-card {
+  padding-right: 46px;
 }
 
 .owner-select,
