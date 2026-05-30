@@ -1405,7 +1405,7 @@ h3:has(.owner-avatar) {
 
 /* 레이드명별 색상 */
 .raid-saved-table tr[data-raid-color="1"] .raid-name-cell::before { background: #ef4444; }
-.raid-saved-table tr[data-raid-color="2"] .raid-name-cell::before { background: #f97316; }
+.raid-saved-table tr[data-raid-color="2"] .raid-name-cell::before { background: #d946ef; }
 .raid-saved-table tr[data-raid-color="3"] .raid-name-cell::before { background: #eab308; }
 .raid-saved-table tr[data-raid-color="4"] .raid-name-cell::before { background: #22c55e; }
 .raid-saved-table tr[data-raid-color="5"] .raid-name-cell::before { background: #14b8a6; }
@@ -1413,6 +1413,6 @@ h3:has(.owner-avatar) {
 .raid-saved-table tr[data-raid-color="7"] .raid-name-cell::before { background: #3b82f6; }
 .raid-saved-table tr[data-raid-color="8"] .raid-name-cell::before { background: #6366f1; }
 .raid-saved-table tr[data-raid-color="9"] .raid-name-cell::before { background: #8b5cf6; }
-.raid-saved-table tr[data-raid-color="10"] .raid-name-cell::before { background: #d946ef; }
+.raid-saved-table tr[data-raid-color="10"] .raid-name-cell::before { background: #f97316; }
 .raid-saved-table tr[data-raid-color="11"] .raid-name-cell::before { background: #ec4899; }
 .raid-saved-table tr[data-raid-color="12"] .raid-name-cell::before { background: #f43f5e; }
