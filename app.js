@@ -74,7 +74,6 @@ const state = {
   raidPlanEditBackup: null,
   draggingRaidPlanId: null,
   raidPlanFilter: null,
-  raidCompleteFilter: "",
   isLoading: false,
   isRemoteReady: false,
   lastUpdatedAt: null,
@@ -500,7 +499,8 @@ function renderSavedRaidPlanner(owners) {
 
   const thead = document.createElement("thead");
   const headRow = document.createElement("tr");
-  headRow.append(createTableHeader("순서"), createCompleteHeaderCell(), createRaidHeaderCell());headRow.append(createTableHeader("순서"), createTableHeader("완료"), createRaidHeaderCell());
+
+  headRow.append(createTableHeader("순서"), createTableHeader("완료"), createRaidHeaderCell());
 
   owners.forEach((owner) => {
     headRow.append(createOwnerRaidHeaderCell(owner));
@@ -565,15 +565,6 @@ function createRaidHeaderCell() {
   return cell;
 }
 
-function createCompleteHeaderCell() {
-  const cell = createTableHeader("");
-  cell.append(createFilterHeaderContent("완료", "completed", [
-    { label: "완료", value: "completed" },
-    { label: "미완료", value: "incomplete" },
-  ], state.raidCompleteFilter));
-  return cell;
-}
-
 function createOwnerRaidHeaderCell(owner) {
   const cell = createTableHeader("");
   cell.append(createFilterHeaderContent(owner, "character", getCharacterFilterOptions(owner), state.raidPlanFilter?.type === "character" && state.raidPlanFilter.owner === owner ? state.raidPlanFilter.value : "", owner));
@@ -604,12 +595,7 @@ function createFilterHeaderContent(label, type, options, selectedValue, owner = 
   select.value = selectedValue;
   select.addEventListener("click", (event) => event.stopPropagation());
   select.addEventListener("change", () => {
-    if (type === "completed") {
-      state.raidCompleteFilter = select.value;
-    } else {
-      state.raidPlanFilter = select.value ? { type, owner, value: select.value } : null;
-    }
-
+    state.raidPlanFilter = select.value ? { type, owner, value: select.value } : null;
     state.selectedRaidPlanIds.clear();
     state.editingRaidPlanIds.clear();
     renderRaidPlanner();
@@ -1031,7 +1017,6 @@ function cancelRaidEdits() {
   state.editingRaidPlanIds.clear();
   state.raidPlanEditBackup = null;
   state.raidPlanFilter = null;
-  state.raidCompleteFilter = "";
   renderRaidPlanner();
   renderMissingRaidBoard();
 }
@@ -1039,7 +1024,6 @@ function cancelRaidEdits() {
 function cancelRaidDrafts() {
   state.raidPlanDrafts = [];
   state.raidPlanFilter = null;
-  state.raidCompleteFilter = "";
   renderRaidPlanner();
   renderMissingRaidBoard();
 }
@@ -1349,25 +1333,14 @@ function getRaidPlanRows(raidPlans = state.raidPlanDrafts) {
 }
 
 function getFilteredRaidPlanRows(rows) {
-  let filteredRows = rows;
-
-  if (state.raidPlanFilter?.type === "raid") {
-    filteredRows = filteredRows.filter((plan) => plan.raidName === state.raidPlanFilter.value);
+  if (!state.raidPlanFilter) return rows;
+  if (state.raidPlanFilter.type === "raid") {
+    return rows.filter((plan) => plan.raidName === state.raidPlanFilter.value);
   }
-
-  if (state.raidPlanFilter?.type === "character") {
-    filteredRows = filteredRows.filter((plan) => Object.values(plan.characters ?? {}).includes(state.raidPlanFilter.value));
+  if (state.raidPlanFilter.type === "character") {
+    return rows.filter((plan) => Object.values(plan.characters ?? {}).includes(state.raidPlanFilter.value));
   }
-
-  if (state.raidCompleteFilter === "completed") {
-    filteredRows = filteredRows.filter((plan) => Boolean(plan.completed));
-  }
-
-  if (state.raidCompleteFilter === "incomplete") {
-    filteredRows = filteredRows.filter((plan) => !plan.completed);
-  }
-
-  return filteredRows;
+  return rows;
 }
 
 function getRaidFilterOptions() {
