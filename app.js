@@ -57,6 +57,8 @@ const state = {
   rosters: [],
   assignments: loadAssignments(),
   raidPlans: loadRaidPlans(),
+  raidPlanDrafts: [],
+  selectedRaidPlanId: null,
   isLoading: false,
   isRemoteReady: false,
   lastUpdatedAt: null,
@@ -79,6 +81,11 @@ const elements = {
   assignedRosterBoard: document.querySelector("#assigned-roster-board"),
   addRaidRowButton: document.querySelector("#add-raid-row-button"),
   saveRaidPlanButton: document.querySelector("#save-raid-plan-button"),
+  editRaidRowButton: document.querySelector("#edit-raid-row-button"),
+  deleteRaidRowButton: document.querySelector("#delete-raid-row-button"),
+  resetRaidCompleteButton: document.querySelector("#reset-raid-complete-button"),
+  raidSavedHead: document.querySelector("#raid-saved-head"),
+  raidSavedBody: document.querySelector("#raid-saved-body"),
   raidPlanHead: document.querySelector("#raid-plan-head"),
   raidPlanBody: document.querySelector("#raid-plan-body"),
   raidPlanSummary: document.querySelector("#raid-plan-summary"),
@@ -100,6 +107,9 @@ elements.addAccountButton.addEventListener("click", addAccountEditorRow);
 elements.saveAccountsButton.addEventListener("click", saveAccountEditor);
 elements.addRaidRowButton.addEventListener("click", addRaidPlanRow);
 elements.saveRaidPlanButton.addEventListener("click", saveRaidPlanChanges);
+elements.editRaidRowButton.addEventListener("click", editSelectedRaidPlan);
+elements.deleteRaidRowButton.addEventListener("click", deleteSelectedRaidPlan);
+elements.resetRaidCompleteButton.addEventListener("click", resetRaidCompleted);
 for (const button of elements.tabButtons) {
   button.addEventListener("click", () => activateTab(button.dataset.tabTarget));
 }
@@ -326,9 +336,35 @@ function renderAssignedRosterBoard() {
 
 function renderRaidPlanner() {
   const owners = getOwners();
-  const rows = getRaidPlanRows();
+  renderSavedRaidPlanner(owners);
+  renderRaidEditor(owners);
+  renderRaidPlanActions();
+}
+
+function renderSavedRaidPlanner(owners) {
+  const rows = getRaidPlanRows(state.raidPlans);
   const headerRow = document.createElement("tr");
-  headerRow.append(createTableHeader("제외"), createTableHeader("레이드명"), ...owners.map(createTableHeader), createTableHeader(""));
+  headerRow.append(createTableHeader("완료"), createTableHeader("레이드명"), ...owners.map(createTableHeader));
+  elements.raidSavedHead.replaceChildren(headerRow);
+
+  if (!rows.length) {
+    const row = document.createElement("tr");
+    const cell = document.createElement("td");
+    cell.colSpan = owners.length + 2;
+    cell.className = "raid-empty-cell";
+    cell.textContent = "아래에서 레이드를 추가하고 저장하면 편성표가 표시됩니다.";
+    row.append(cell);
+    elements.raidSavedBody.replaceChildren(row);
+    return;
+  }
+
+  elements.raidSavedBody.replaceChildren(...rows.map((plan) => createSavedRaidPlanRow(plan, owners)));
+}
+
+function renderRaidEditor(owners) {
+  const rows = getRaidPlanRows(state.raidPlanDrafts);
+  const headerRow = document.createElement("tr");
+  headerRow.append(createTableHeader("완료"), createTableHeader("레이드명"), ...owners.map(createTableHeader), createTableHeader(""));
   elements.raidPlanHead.replaceChildren(headerRow);
 
   if (!rows.length) {
@@ -336,7 +372,7 @@ function renderRaidPlanner() {
     const cell = document.createElement("td");
     cell.colSpan = owners.length + 3;
     cell.className = "raid-empty-cell";
-    cell.textContent = "레이드를 추가해서 편성표를 시작하세요.";
+    cell.textContent = "레이드 추가를 누르면 여기에서 편성할 수 있습니다.";
     row.append(cell);
     elements.raidPlanBody.replaceChildren(row);
     renderRaidPlanSummary();
@@ -345,6 +381,12 @@ function renderRaidPlanner() {
 
   elements.raidPlanBody.replaceChildren(...rows.map((plan) => createRaidPlanRow(plan, owners)));
   renderRaidPlanSummary();
+}
+
+function renderRaidPlanActions() {
+  const hasSelected = Boolean(state.selectedRaidPlanId && state.raidPlans.some((plan) => plan.id === state.selectedRaidPlanId));
+  elements.editRaidRowButton.disabled = !hasSelected;
+  elements.deleteRaidRowButton.disabled = !hasSelected;
 }
 
 function createTableHeader(label) {
@@ -359,14 +401,14 @@ function createRaidPlanRow(plan, owners) {
   row.dataset.raidPlanId = plan.id;
   row.dataset.raidTier = getRaidTier(plan.raidName);
 
-  const excludedCell = document.createElement("td");
-  excludedCell.className = "raid-excluded-cell";
-  const excluded = document.createElement("input");
-  excluded.type = "checkbox";
-  excluded.checked = Boolean(plan.excluded);
-  excluded.setAttribute("aria-label", `${plan.raidName || "레이드"} 제외`);
-  excluded.addEventListener("change", () => updateRaidPlan(plan.id, { excluded: excluded.checked }));
-  excludedCell.append(excluded);
+  const completedCell = document.createElement("td");
+  completedCell.className = "raid-completed-cell";
+  const completed = document.createElement("input");
+  completed.type = "checkbox";
+  completed.checked = Boolean(plan.completed);
+  completed.setAttribute("aria-label", `${plan.raidName || "레이드"} 완료`);
+  completed.addEventListener("change", () => updateRaidPlan(plan.id, { completed: completed.checked }));
+  completedCell.append(completed);
 
   const raidCell = document.createElement("td");
   raidCell.className = "raid-name-cell";
@@ -402,15 +444,64 @@ function createRaidPlanRow(plan, owners) {
   removeButton.addEventListener("click", () => removeRaidPlanRow(plan.id));
   actionsCell.append(removeButton);
 
-  row.append(excludedCell, raidCell, ...ownerCells, actionsCell);
+  row.classList.toggle("is-completed", Boolean(plan.completed));
+  row.append(completedCell, raidCell, ...ownerCells, actionsCell);
   return row;
+}
+
+function createSavedRaidPlanRow(plan, owners) {
+  const row = document.createElement("tr");
+  row.dataset.raidPlanId = plan.id;
+  row.dataset.raidTier = getRaidTier(plan.raidName);
+  row.classList.toggle("is-selected", state.selectedRaidPlanId === plan.id);
+  row.classList.toggle("is-completed", Boolean(plan.completed));
+  row.addEventListener("click", () => selectRaidPlanRow(plan.id));
+
+  const completedCell = document.createElement("td");
+  completedCell.className = "raid-completed-cell";
+  const completed = document.createElement("input");
+  completed.type = "checkbox";
+  completed.checked = Boolean(plan.completed);
+  completed.setAttribute("aria-label", `${plan.raidName || "레이드"} 완료`);
+  completed.addEventListener("click", (event) => event.stopPropagation());
+  completed.addEventListener("change", () => updateSavedRaidPlan(plan.id, { completed: completed.checked }));
+  completedCell.append(completed);
+
+  const raidCell = document.createElement("td");
+  raidCell.className = "raid-name-cell raid-name-readonly";
+  raidCell.textContent = plan.raidName || "-";
+
+  const ownerCells = owners.map((owner) => createSavedRaidOwnerCell(plan, owner));
+  row.append(completedCell, raidCell, ...ownerCells);
+  return row;
+}
+
+function createSavedRaidOwnerCell(plan, owner) {
+  const cell = document.createElement("td");
+  const character = findCharacterByKey(plan.characters?.[owner]);
+  if (!character) {
+    cell.textContent = "";
+    return cell;
+  }
+  const status = getRaidPlanCellStatus(plan, character, state.raidPlans);
+  cell.dataset.tier = getLevelTier(character.itemLevelNumber);
+  cell.classList.toggle("is-extra-raid", status.isExtra);
+  cell.classList.toggle("is-excluded-raid", status.isExcluded);
+  cell.classList.toggle("is-duplicate-raid", status.isDuplicate);
+
+  const name = document.createElement("strong");
+  name.textContent = character.characterName;
+  const level = document.createElement("span");
+  level.textContent = character.itemAvgLevel;
+  cell.append(name, level);
+  return cell;
 }
 
 function createRaidOwnerCell(plan, owner) {
   const cell = document.createElement("td");
   const character = findCharacterByKey(plan.characters?.[owner]);
   if (character) {
-    const status = getRaidPlanCellStatus(plan, character);
+    const status = getRaidPlanCellStatus(plan, character, state.raidPlanDrafts);
     cell.dataset.tier = getLevelTier(character.itemLevelNumber);
     cell.classList.toggle("is-extra-raid", status.isExtra);
     cell.classList.toggle("is-excluded-raid", status.isExcluded);
@@ -517,44 +608,86 @@ function analyzeRaidPlans() {
 function addRaidPlanRow() {
   const owners = getOwners();
   const raidName = raidCatalog[0]?.name ?? "";
-  state.raidPlans.push({
+  state.raidPlanDrafts.push({
     id: createId("raid"),
     raidName,
-    excluded: false,
+    completed: false,
     characters: Object.fromEntries(owners.map((owner) => [owner, ""])),
   });
-  saveRaidPlans();
   renderRaidPlanner();
 }
 
 async function saveRaidPlanChanges() {
+  state.raidPlans = mergeRaidPlans(state.raidPlans, state.raidPlanDrafts);
   saveRaidPlans();
   elements.saveRaidPlanButton.disabled = true;
   const ok = await saveSheetState();
   elements.saveRaidPlanButton.disabled = false;
+  if (ok) state.raidPlanDrafts = [];
+  state.selectedRaidPlanId = null;
+  renderRaidPlanner();
   setStatus(ok ? "레이드 편성 저장 완료" : "레이드 편성 저장 실패", ok ? "success" : "error");
 }
 
 function removeRaidPlanRow(id) {
-  state.raidPlans = state.raidPlans.filter((plan) => plan.id !== id);
-  saveRaidPlans();
+  state.raidPlanDrafts = state.raidPlanDrafts.filter((plan) => plan.id !== id);
   renderRaidPlanner();
 }
 
 function updateRaidPlan(id, patch, shouldRender = true) {
-  state.raidPlans = getRaidPlanRows().map((plan) => (plan.id === id ? { ...plan, ...patch } : plan));
-  saveRaidPlans();
+  state.raidPlanDrafts = getRaidPlanRows(state.raidPlanDrafts).map((plan) => (plan.id === id ? { ...plan, ...patch } : plan));
   if (shouldRender) renderRaidPlanner();
   else renderRaidPlanSummary();
 }
 
 function updateRaidPlanCharacter(id, owner, key) {
-  state.raidPlans = getRaidPlanRows().map((plan) => {
+  state.raidPlanDrafts = getRaidPlanRows(state.raidPlanDrafts).map((plan) => {
     if (plan.id !== id) return plan;
     return { ...plan, characters: { ...(plan.characters ?? {}), [owner]: key } };
   });
-  saveRaidPlans();
   renderRaidPlanner();
+}
+
+async function updateSavedRaidPlan(id, patch) {
+  state.raidPlans = getRaidPlanRows(state.raidPlans).map((plan) => (plan.id === id ? { ...plan, ...patch } : plan));
+  saveRaidPlans();
+  await saveSheetState();
+  renderRaidPlanner();
+}
+
+function selectRaidPlanRow(id) {
+  state.selectedRaidPlanId = state.selectedRaidPlanId === id ? null : id;
+  renderRaidPlanner();
+}
+
+function editSelectedRaidPlan() {
+  const plan = state.raidPlans.find((item) => item.id === state.selectedRaidPlanId);
+  if (!plan) return;
+  const exists = state.raidPlanDrafts.some((item) => item.id === plan.id);
+  state.raidPlanDrafts = exists
+    ? state.raidPlanDrafts.map((item) => (item.id === plan.id ? { ...plan, characters: { ...(plan.characters ?? {}) } } : item))
+    : [...state.raidPlanDrafts, { ...plan, characters: { ...(plan.characters ?? {}) } }];
+  renderRaidPlanner();
+}
+
+async function deleteSelectedRaidPlan() {
+  if (!state.selectedRaidPlanId) return;
+  state.raidPlans = state.raidPlans.filter((plan) => plan.id !== state.selectedRaidPlanId);
+  state.raidPlanDrafts = state.raidPlanDrafts.filter((plan) => plan.id !== state.selectedRaidPlanId);
+  state.selectedRaidPlanId = null;
+  saveRaidPlans();
+  const ok = await saveSheetState();
+  renderRaidPlanner();
+  setStatus(ok ? "레이드 편성 삭제 완료" : "레이드 편성 삭제 실패", ok ? "success" : "error");
+}
+
+async function resetRaidCompleted() {
+  state.raidPlans = state.raidPlans.map((plan) => ({ ...plan, completed: false }));
+  state.raidPlanDrafts = state.raidPlanDrafts.map((plan) => ({ ...plan, completed: false }));
+  saveRaidPlans();
+  const ok = await saveSheetState();
+  renderRaidPlanner();
+  setStatus(ok ? "레이드 체크 초기화 완료" : "레이드 체크 초기화 실패", ok ? "success" : "error");
 }
 
 function createLoadingSourceColumn(group) {
@@ -755,11 +888,11 @@ function getRaidRecommendation(character) {
   return raidRecommendations.find((item) => character.itemLevelNumber >= item.minLevel) ?? { primary: [], extra: [] };
 }
 
-function getRaidPlanCellStatus(plan, character) {
+function getRaidPlanCellStatus(plan, character, raidPlans = state.raidPlanDrafts) {
   const raidName = plan.raidName?.trim();
   const recommended = getRecommendedRaids(character);
   const extra = getExtraRaids(character);
-  const sameRaidCount = getRaidPlanRows().filter((row) => {
+  const sameRaidCount = getRaidPlanRows(raidPlans).filter((row) => {
     if (row.excluded || row.raidName !== raidName) return false;
     return Object.values(row.characters ?? {}).includes(character.key);
   }).length;
@@ -774,9 +907,9 @@ function getRaidTier(raidName) {
   return raidCatalog.find((raid) => raid.name === raidName)?.tier ?? "base";
 }
 
-function getRaidPlanRows() {
+function getRaidPlanRows(raidPlans = state.raidPlanDrafts) {
   const owners = getOwners();
-  return normalizeRaidPlans(state.raidPlans).map((plan) => ({
+  return normalizeRaidPlans(raidPlans).map((plan) => ({
     ...plan,
     characters: Object.fromEntries(owners.map((owner) => [owner, plan.characters?.[owner] ?? ""])),
   }));
@@ -941,6 +1074,7 @@ async function loadSheetState() {
     state.accounts = mergeDefaultAvatars(nextAccounts);
     if (Array.isArray(payload.assignments)) state.assignments = remoteAssignments;
     if (Array.isArray(payload.raidPlans)) state.raidPlans = remoteRaidPlans;
+    state.raidPlanDrafts = [];
     state.isRemoteReady = true;
     saveAccounts();
     saveAssignments();
@@ -1017,9 +1151,23 @@ function normalizeRaidPlans(raidPlans) {
       id,
       raidName,
       excluded: Boolean(plan?.excluded),
+      completed: Boolean(plan?.completed),
       characters: Object.fromEntries(Object.entries(characters).map(([owner, key]) => [String(owner), String(key ?? "")])),
     };
   }).filter((plan) => plan.raidName || Object.values(plan.characters).some(Boolean));
+}
+
+function cloneRaidPlans(raidPlans) {
+  return normalizeRaidPlans(raidPlans).map((plan) => ({
+    ...plan,
+    characters: { ...(plan.characters ?? {}) },
+  }));
+}
+
+function mergeRaidPlans(savedPlans, draftPlans) {
+  const plansById = new Map(cloneRaidPlans(savedPlans).map((plan) => [plan.id, plan]));
+  for (const plan of cloneRaidPlans(draftPlans)) plansById.set(plan.id, plan);
+  return Array.from(plansById.values());
 }
 
 function mergeDefaultAvatars(accounts) {
