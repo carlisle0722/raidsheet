@@ -58,8 +58,8 @@ const state = {
   assignments: loadAssignments(),
   raidPlans: loadRaidPlans(),
   raidPlanDrafts: [],
-  selectedRaidPlanId: null,
-  editingRaidPlanId: null,
+  selectedRaidPlanIds: new Set(),
+  editingRaidPlanIds: new Set(),
   raidPlanEditBackup: null,
   isLoading: false,
   isRemoteReady: false,
@@ -357,12 +357,23 @@ function renderSavedRaidPlanner(owners) {
   }
 
   const table = document.createElement("table");
-  table.className = "raid-summary-table";
+  table.className = "raid-saved-table";
+  const colgroup = document.createElement("colgroup");
+  const completedCol = document.createElement("col");
+  completedCol.className = "raid-complete-col";
+  const raidCol = document.createElement("col");
+  raidCol.className = "raid-name-col";
+  const ownerCols = owners.map(() => {
+    const col = document.createElement("col");
+    col.className = "raid-owner-col";
+    return col;
+  });
+  colgroup.append(completedCol, raidCol, ...ownerCols);
 
   const thead = document.createElement("thead");
   const headRow = document.createElement("tr");
 
-  headRow.append(createTableHeader("레이드"));
+  headRow.append(createTableHeader("완료"), createTableHeader("레이드"));
 
   owners.forEach((owner) => {
     headRow.append(createTableHeader(owner));
@@ -373,39 +384,10 @@ function renderSavedRaidPlanner(owners) {
   const tbody = document.createElement("tbody");
 
   rows.forEach((plan) => {
-    const tr = document.createElement("tr");
-
-    const raidTd = document.createElement("td");
-    raidTd.className = "raid-column";
-    raidTd.textContent = plan.raidName;
-    tr.append(raidTd);
-
-    owners.forEach((owner) => {
-      const td = document.createElement("td");
-
-      const character = findCharacterByKey(
-        plan.characters?.[owner]
-      );
-
-      if (character) {
-        td.innerHTML = `
-          <strong>${character.characterName}</strong>
-          <div class="raid-level">
-            ${character.itemAvgLevel}
-          </div>
-        `;
-      } else {
-        td.className = "empty";
-        td.textContent = "-";
-      }
-
-      tr.append(td);
-    });
-
-    tbody.append(tr);
+    tbody.append(createSavedRaidPlanRow(plan, owners));
   });
 
-  table.append(thead, tbody);
+  table.append(colgroup, thead, tbody);
 
   elements.raidSavedBoard.replaceChildren(table);
 }
@@ -433,10 +415,14 @@ function renderRaidEditor(owners) {
 }
 
 function renderRaidPlanActions() {
-  const hasSelected = Boolean(state.selectedRaidPlanId && state.raidPlans.some((plan) => plan.id === state.selectedRaidPlanId));
+  pruneRaidPlanSelection();
+  const selectedCount = state.selectedRaidPlanIds.size;
+  const editingCount = state.editingRaidPlanIds.size;
+  const hasSelected = selectedCount > 0;
   elements.editRaidRowButton.disabled = !hasSelected;
   elements.deleteRaidRowButton.disabled = !hasSelected;
-  elements.editRaidRowButton.textContent = state.editingRaidPlanId ? "수정 중" : "수정";
+  elements.editRaidRowButton.textContent = editingCount ? `수정 중 (${editingCount})` : selectedCount > 1 ? `수정 (${selectedCount})` : "수정";
+  elements.deleteRaidRowButton.textContent = selectedCount > 1 ? `삭제 (${selectedCount})` : "삭제";
 }
 
 function createTableHeader(label) {
@@ -477,97 +463,84 @@ function createRaidNameSelect(plan, onChange) {
   for (const raid of raidCatalog) {
     raidSelect.add(new Option(raid.name, raid.name, raid.name === plan.raidName, raid.name === plan.raidName));
   }
-  raidSelect.add(new Option("직접 입력", "__custom__", !isCatalogRaid, !isCatalogRaid));
-  const customInput = document.createElement("input");
-  customInput.className = "raid-name-input";
-  customInput.type = "text";
-  customInput.value = isCatalogRaid ? "" : plan.raidName;
-  customInput.placeholder = "레이드명";
-  customInput.hidden = raidSelect.value !== "__custom__";
+  if (!isCatalogRaid && plan.raidName) {
+    raidSelect.add(new Option(plan.raidName, plan.raidName, true, true));
+  }
   raidSelect.addEventListener("change", () => {
-    const isCustom = raidSelect.value === "__custom__";
-    customInput.hidden = !isCustom;
-    onChange(isCustom ? customInput.value.trim() : raidSelect.value, true);
+    onChange(raidSelect.value, true);
   });
-  customInput.addEventListener("input", () => onChange(customInput.value.trim(), false));
-  return [raidSelect, customInput];
+  return [raidSelect];
 }
 
-function createSavedRaidPlanCard(plan, owners) {
-  const card = document.createElement("article");
-  card.className = "raid-plan-card";
-  card.dataset.raidPlanId = plan.id;
-  card.dataset.raidTier = getRaidTier(plan.raidName);
-  card.dataset.raidColor = getRaidColorIndex(plan.raidName);
-  card.classList.toggle("is-selected", state.selectedRaidPlanId === plan.id);
-  card.classList.toggle("is-completed", Boolean(plan.completed));
-  card.classList.toggle("is-editing", state.editingRaidPlanId === plan.id);
-  card.addEventListener("click", () => selectRaidPlanRow(plan.id));
+function createSavedRaidPlanRow(plan, owners) {
+  const row = document.createElement("tr");
+  row.dataset.raidPlanId = plan.id;
+  row.dataset.raidTier = getRaidTier(plan.raidName);
+  row.classList.toggle("is-selected", state.selectedRaidPlanIds.has(plan.id));
+  row.classList.toggle("is-completed", Boolean(plan.completed));
+  row.classList.toggle("is-editing", state.editingRaidPlanIds.has(plan.id));
+  row.addEventListener("click", (event) => {
+    if (event.target.closest("button, input, select, label")) return;
+    selectRaidPlanRow(plan.id);
+  });
 
-  const header = document.createElement("div");
-  header.className = "raid-plan-card-heading";
+  const completedCell = document.createElement("td");
+  completedCell.className = "raid-completed-cell";
   const completed = document.createElement("input");
   completed.type = "checkbox";
   completed.checked = Boolean(plan.completed);
   completed.setAttribute("aria-label", `${plan.raidName || "레이드"} 완료`);
   completed.addEventListener("click", (event) => event.stopPropagation());
   completed.addEventListener("change", () => updateSavedRaidPlan(plan.id, { completed: completed.checked }));
+  completedCell.append(completed);
 
-  const title = document.createElement("strong");
-  title.className = "raid-plan-title";
-  title.textContent = plan.raidName || "-";
-  header.append(completed, title);
-
-  const body = document.createElement("div");
-  body.className = "raid-plan-members";
-  if (state.editingRaidPlanId === plan.id) {
-    body.append(createInlineRaidNameEditor(plan), ...owners.map((owner) => createRaidOwnerCell(plan, owner, "saved")));
+  const raidCell = document.createElement("td");
+  raidCell.className = "raid-name-cell";
+  if (state.editingRaidPlanIds.has(plan.id)) {
+    raidCell.append(...createRaidNameSelect(plan, (raidName) => updateSavedRaidPlanLocal(plan.id, { raidName })));
   } else {
-    body.append(...owners.map((owner) => createSavedRaidOwnerCell(plan, owner)));
+    const raidName = document.createElement("strong");
+    raidName.className = "raid-name-readonly";
+    raidName.textContent = plan.raidName || "-";
+    raidCell.append(raidName);
   }
 
-  card.append(header, body);
-  return card;
+  row.append(completedCell, raidCell, ...owners.map((owner) => {
+    if (state.editingRaidPlanIds.has(plan.id)) return createRaidOwnerCell(plan, owner, "saved");
+    return createSavedRaidOwnerTableCell(plan, owner);
+  }));
+  return row;
 }
 
-function createInlineRaidNameEditor(plan) {
-  const cell = document.createElement("div");
-  cell.className = "raid-member-card raid-inline-editor raid-name-cell";
-  const raidSelect = createRaidNameSelect(plan, (raidName) => updateSavedRaidPlanLocal(plan.id, { raidName }));
-  cell.append(...raidSelect);
-  return cell;
-}
-
-function createSavedRaidOwnerCell(plan, owner) {
-  const cell = document.createElement("div");
-  cell.className = "raid-member-card";
+function createSavedRaidOwnerTableCell(plan, owner) {
+  const cell = document.createElement("td");
+  cell.className = "raid-character-cell";
   const character = findCharacterByKey(plan.characters?.[owner]);
   if (!character) {
     const empty = document.createElement("span");
     empty.className = "raid-member-empty";
-    empty.textContent = owner;
+    empty.textContent = "-";
     cell.append(empty);
     return cell;
   }
+
   const status = getRaidPlanCellStatus(plan, character, state.raidPlans);
   cell.dataset.tier = getLevelTier(character.itemLevelNumber);
   cell.classList.toggle("is-extra-raid", status.isExtra);
   cell.classList.toggle("is-excluded-raid", status.isExcluded);
   cell.classList.toggle("is-duplicate-raid", status.isDuplicate);
+  cell.title = `${owner} · ${character.characterName} · ${character.itemAvgLevel}`;
 
-  const name = document.createElement("strong");
-  name.textContent = character.characterName;
-  const level = document.createElement("span");
-  level.textContent = character.itemAvgLevel;
-  const ownerLabel = document.createElement("small");
-  ownerLabel.textContent = owner;
-  cell.append(ownerLabel, name, level);
+  const name = document.createElement("span");
+  name.className = "raid-character-chip";
+  name.textContent = `( ${character.characterName} )`;
+  cell.append(name);
   return cell;
 }
 
 function createRaidOwnerCell(plan, owner, scope = "draft") {
-  const cell = document.createElement(scope === "saved" ? "div" : "td");
-  if (scope === "saved") cell.className = "raid-member-card raid-inline-editor";
+  const cell = document.createElement("td");
+  if (scope === "saved") cell.className = "raid-character-cell";
   const character = findCharacterByKey(plan.characters?.[owner]);
   if (character) {
     const status = getRaidPlanCellStatus(plan, character, scope === "saved" ? state.raidPlans : state.raidPlanDrafts);
@@ -697,8 +670,8 @@ async function saveRaidPlanChanges() {
   const ok = await saveSheetState();
   elements.saveRaidPlanButton.disabled = false;
   if (ok) state.raidPlanDrafts = [];
-  state.selectedRaidPlanId = null;
-  state.editingRaidPlanId = null;
+  state.selectedRaidPlanIds.clear();
+  state.editingRaidPlanIds.clear();
   state.raidPlanEditBackup = null;
   renderRaidPlanner();
   setStatus(ok ? "레이드 편성 저장 완료" : "레이드 편성 저장 실패", ok ? "success" : "error");
@@ -760,38 +733,58 @@ function updateSavedRaidPlanCharacterLocal(id, owner, key) {
 }
 
 function selectRaidPlanRow(id) {
-  state.selectedRaidPlanId = state.selectedRaidPlanId === id ? null : id;
+  if (state.selectedRaidPlanIds.has(id)) {
+    state.selectedRaidPlanIds.delete(id);
+    state.editingRaidPlanIds.delete(id);
+  } else {
+    state.selectedRaidPlanIds.add(id);
+  }
   renderRaidPlanner();
 }
 
 function editSelectedRaidPlan() {
-  const plan = state.raidPlans.find((item) => item.id === state.selectedRaidPlanId);
-  if (!plan) return;
-  if (state.editingRaidPlanId !== plan.id) state.raidPlanEditBackup = cloneRaidPlans(state.raidPlans);
-  state.editingRaidPlanId = state.editingRaidPlanId === plan.id ? null : plan.id;
+  pruneRaidPlanSelection();
+  const selectedIds = [...state.selectedRaidPlanIds];
+  if (!selectedIds.length) return;
+  if (!state.raidPlanEditBackup) state.raidPlanEditBackup = cloneRaidPlans(state.raidPlans);
+
+  const allSelectedEditing = selectedIds.every((id) => state.editingRaidPlanIds.has(id));
+  if (allSelectedEditing) {
+    selectedIds.forEach((id) => state.editingRaidPlanIds.delete(id));
+  } else {
+    selectedIds.forEach((id) => state.editingRaidPlanIds.add(id));
+  }
   renderRaidPlanner();
 }
 
 function cancelRaidEdits() {
   if (state.raidPlanEditBackup) state.raidPlans = cloneRaidPlans(state.raidPlanEditBackup);
   state.raidPlanDrafts = [];
-  state.selectedRaidPlanId = null;
-  state.editingRaidPlanId = null;
+  state.selectedRaidPlanIds.clear();
+  state.editingRaidPlanIds.clear();
   state.raidPlanEditBackup = null;
   renderRaidPlanner();
 }
 
 async function deleteSelectedRaidPlan() {
-  if (!state.selectedRaidPlanId) return;
-  state.raidPlans = state.raidPlans.filter((plan) => plan.id !== state.selectedRaidPlanId);
-  state.raidPlanDrafts = state.raidPlanDrafts.filter((plan) => plan.id !== state.selectedRaidPlanId);
-  state.selectedRaidPlanId = null;
-  state.editingRaidPlanId = null;
+  pruneRaidPlanSelection();
+  if (!state.selectedRaidPlanIds.size) return;
+  const selectedIds = new Set(state.selectedRaidPlanIds);
+  state.raidPlans = state.raidPlans.filter((plan) => !selectedIds.has(plan.id));
+  state.raidPlanDrafts = state.raidPlanDrafts.filter((plan) => !selectedIds.has(plan.id));
+  state.selectedRaidPlanIds.clear();
+  state.editingRaidPlanIds.clear();
   state.raidPlanEditBackup = null;
   saveRaidPlans();
   const ok = await saveSheetState();
   renderRaidPlanner();
   setStatus(ok ? "레이드 편성 삭제 완료" : "레이드 편성 삭제 실패", ok ? "success" : "error");
+}
+
+function pruneRaidPlanSelection() {
+  const savedIds = new Set(state.raidPlans.map((plan) => plan.id));
+  state.selectedRaidPlanIds = new Set([...state.selectedRaidPlanIds].filter((id) => savedIds.has(id)));
+  state.editingRaidPlanIds = new Set([...state.editingRaidPlanIds].filter((id) => savedIds.has(id) && state.selectedRaidPlanIds.has(id)));
 }
 
 async function resetRaidCompleted() {
