@@ -533,7 +533,7 @@ function createSavedRaidOwnerTableCell(plan, owner) {
 
   const name = document.createElement("span");
   name.className = "raid-character-chip";
-  name.textContent = `( ${character.characterName} )`;
+  name.textContent = `${character.characterName}`;
   cell.append(name);
   return cell;
 }
