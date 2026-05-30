@@ -10,6 +10,7 @@
   --accent: #2f6f6a;
   --accent-strong: #1f5652;
   --danger: #b43b45;
+  --option-extra: #2563eb;
   --tier-red: #e7a3a3;
   --tier-gold: #f0ce86;
   --tier-green: #a9d8bd;
@@ -659,6 +660,10 @@ h3:has(.owner-avatar) {
 }
 
 .raid-saved-table .raid-complete-col {
+  width: 48px;
+}
+
+.raid-saved-table .raid-order-col {
   width: 52px;
 }
 
@@ -695,15 +700,13 @@ h3:has(.owner-avatar) {
   text-align: center;
 }
 
-.raid-saved-table th:nth-child(2),
-.raid-saved-table td:nth-child(2),
 .raid-planner-table th:first-child,
 .raid-planner-table td:first-child {
   width: 170px;
 }
 
-.raid-saved-table th:nth-child(2),
-.raid-saved-table td:nth-child(2) {
+.raid-saved-table th:nth-child(3),
+.raid-saved-table td:nth-child(3) {
   width: 150px;
 }
 
@@ -739,6 +742,16 @@ h3:has(.owner-avatar) {
   cursor: pointer;
 }
 
+.raid-saved-table tbody tr.is-dragging {
+  opacity: 0.58;
+}
+
+.raid-saved-table tbody tr.is-drag-over td {
+  box-shadow:
+    inset 0 2px 0 var(--accent),
+    0 1px 0 rgba(24, 31, 42, 0.04);
+}
+
 .raid-saved-table tbody tr.is-selected td {
   box-shadow:
     inset 0 0 0 2px rgba(47, 111, 106, 0.34),
@@ -754,35 +767,42 @@ h3:has(.owner-avatar) {
   border-left: 5px solid var(--tier-base);
 }
 
-.raid-saved-table tr[data-raid-tier="ancient"] .raid-name-cell,
-.raid-planner-table tr[data-raid-tier="ancient"] .raid-name-cell {
-  border-left-color: var(--tier-red);
-}
-
-.raid-saved-table tr[data-raid-tier="red"] .raid-name-cell,
-.raid-planner-table tr[data-raid-tier="red"] .raid-name-cell {
-  border-left-color: var(--tier-gold);
-}
-
-.raid-saved-table tr[data-raid-tier="green"] .raid-name-cell,
-.raid-planner-table tr[data-raid-tier="green"] .raid-name-cell {
-  border-left-color: var(--tier-green);
-}
-
-.raid-saved-table tr[data-raid-tier="blue"] .raid-name-cell,
-.raid-planner-table tr[data-raid-tier="blue"] .raid-name-cell {
-  border-left-color: var(--tier-blue);
-}
-
-.raid-saved-table tr[data-raid-tier="low"] .raid-name-cell,
-.raid-planner-table tr[data-raid-tier="low"] .raid-name-cell {
-  border-left-color: var(--tier-low);
-}
-
-.raid-saved-table tr[data-raid-tier="base"] .raid-name-cell,
-.raid-planner-table tr[data-raid-tier="base"] .raid-name-cell {
-  border-left-color: var(--tier-base);
-}
+.raid-saved-table tr[data-raid-color="1"] .raid-name-cell,
+.raid-planner-table tr[data-raid-color="1"] .raid-name-cell { border-left-color: #ef4444; }
+.raid-saved-table tr[data-raid-color="2"] .raid-name-cell,
+.raid-planner-table tr[data-raid-color="2"] .raid-name-cell { border-left-color: #f97316; }
+.raid-saved-table tr[data-raid-color="3"] .raid-name-cell,
+.raid-planner-table tr[data-raid-color="3"] .raid-name-cell { border-left-color: #eab308; }
+.raid-saved-table tr[data-raid-color="4"] .raid-name-cell,
+.raid-planner-table tr[data-raid-color="4"] .raid-name-cell { border-left-color: #22c55e; }
+.raid-saved-table tr[data-raid-color="5"] .raid-name-cell,
+.raid-planner-table tr[data-raid-color="5"] .raid-name-cell { border-left-color: #14b8a6; }
+.raid-saved-table tr[data-raid-color="6"] .raid-name-cell,
+.raid-planner-table tr[data-raid-color="6"] .raid-name-cell { border-left-color: #06b6d4; }
+.raid-saved-table tr[data-raid-color="7"] .raid-name-cell,
+.raid-planner-table tr[data-raid-color="7"] .raid-name-cell { border-left-color: #3b82f6; }
+.raid-saved-table tr[data-raid-color="8"] .raid-name-cell,
+.raid-planner-table tr[data-raid-color="8"] .raid-name-cell { border-left-color: #6366f1; }
+.raid-saved-table tr[data-raid-color="9"] .raid-name-cell,
+.raid-planner-table tr[data-raid-color="9"] .raid-name-cell { border-left-color: #8b5cf6; }
+.raid-saved-table tr[data-raid-color="10"] .raid-name-cell,
+.raid-planner-table tr[data-raid-color="10"] .raid-name-cell { border-left-color: #d946ef; }
+.raid-saved-table tr[data-raid-color="11"] .raid-name-cell,
+.raid-planner-table tr[data-raid-color="11"] .raid-name-cell { border-left-color: #ec4899; }
+.raid-saved-table tr[data-raid-color="12"] .raid-name-cell,
+.raid-planner-table tr[data-raid-color="12"] .raid-name-cell { border-left-color: #f43f5e; }
+.raid-saved-table tr[data-raid-color="13"] .raid-name-cell,
+.raid-planner-table tr[data-raid-color="13"] .raid-name-cell { border-left-color: #84cc16; }
+.raid-saved-table tr[data-raid-color="14"] .raid-name-cell,
+.raid-planner-table tr[data-raid-color="14"] .raid-name-cell { border-left-color: #10b981; }
+.raid-saved-table tr[data-raid-color="15"] .raid-name-cell,
+.raid-planner-table tr[data-raid-color="15"] .raid-name-cell { border-left-color: #0ea5e9; }
+.raid-saved-table tr[data-raid-color="16"] .raid-name-cell,
+.raid-planner-table tr[data-raid-color="16"] .raid-name-cell { border-left-color: #7c3aed; }
+.raid-saved-table tr[data-raid-color="17"] .raid-name-cell,
+.raid-planner-table tr[data-raid-color="17"] .raid-name-cell { border-left-color: #db2777; }
+.raid-saved-table tr[data-raid-color="18"] .raid-name-cell,
+.raid-planner-table tr[data-raid-color="18"] .raid-name-cell { border-left-color: #64748b; }
 
 .raid-name-select,
 .raid-name-input,
@@ -794,7 +814,15 @@ h3:has(.owner-avatar) {
   color: var(--ink);
   background: var(--surface);
   font-size: 0.86rem;
-  font-weight: 800;
+  font-weight: 600;
+}
+
+.raid-character-select option.is-duplicate-option {
+  color: var(--danger);
+}
+
+.raid-character-select option.is-extra-option {
+  color: var(--option-extra);
 }
 
 .raid-saved-table td[data-tier],
@@ -855,7 +883,7 @@ h3:has(.owner-avatar) {
   width: 100%;
   color: var(--ink);
   font-size: 0.92rem;
-  font-weight: 900;
+  font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -878,7 +906,7 @@ h3:has(.owner-avatar) {
   background: rgba(25, 29, 36, 0.015);
   color: var(--ink);
   font-size: 0.96rem;
-  font-weight: 950;
+  font-weight: 600;
   line-height: 1.2;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -919,7 +947,7 @@ h3:has(.owner-avatar) {
   border-color: rgba(25, 29, 36, 0.42);
   color: var(--ink);
   background: rgba(25, 29, 36, 0.08);
-  font-weight: 950;
+  font-weight: 650;
 }
 
 .raid-saved-table td.is-excluded-raid,
@@ -947,6 +975,26 @@ h3:has(.owner-avatar) {
   width: 18px;
   height: 18px;
   accent-color: var(--accent);
+}
+
+.raid-order-cell {
+  text-align: center;
+}
+
+.raid-drag-handle {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--muted);
+  background: var(--surface-soft);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: grab;
+}
+
+.raid-drag-handle:active {
+  cursor: grabbing;
 }
 
 .raid-row-actions .icon-button {

@@ -61,6 +61,7 @@ const state = {
   selectedRaidPlanIds: new Set(),
   editingRaidPlanIds: new Set(),
   raidPlanEditBackup: null,
+  draggingRaidPlanId: null,
   isLoading: false,
   isRemoteReady: false,
   lastUpdatedAt: null,
@@ -361,6 +362,8 @@ function renderSavedRaidPlanner(owners) {
   const table = document.createElement("table");
   table.className = "raid-saved-table";
   const colgroup = document.createElement("colgroup");
+  const orderCol = document.createElement("col");
+  orderCol.className = "raid-order-col";
   const completedCol = document.createElement("col");
   completedCol.className = "raid-complete-col";
   const raidCol = document.createElement("col");
@@ -370,12 +373,12 @@ function renderSavedRaidPlanner(owners) {
     col.className = "raid-owner-col";
     return col;
   });
-  colgroup.append(completedCol, raidCol, ...ownerCols);
+  colgroup.append(orderCol, completedCol, raidCol, ...ownerCols);
 
   const thead = document.createElement("thead");
   const headRow = document.createElement("tr");
 
-  headRow.append(createTableHeader("완료"), createTableHeader("레이드"));
+  headRow.append(createTableHeader("순서"), createTableHeader("완료"), createTableHeader("레이드"));
 
   owners.forEach((owner) => {
     headRow.append(createTableHeader(owner));
@@ -438,6 +441,7 @@ function createRaidPlanRow(plan, owners) {
   const row = document.createElement("tr");
   row.dataset.raidPlanId = plan.id;
   row.dataset.raidTier = getRaidTier(plan.raidName);
+  row.dataset.raidColor = getRaidColorIndex(plan.raidName);
 
   const raidCell = document.createElement("td");
   raidCell.className = "raid-name-cell";
@@ -478,6 +482,7 @@ function createSavedRaidPlanRow(plan, owners) {
   const row = document.createElement("tr");
   row.dataset.raidPlanId = plan.id;
   row.dataset.raidTier = getRaidTier(plan.raidName);
+  row.dataset.raidColor = getRaidColorIndex(plan.raidName);
   row.classList.toggle("is-selected", state.selectedRaidPlanIds.has(plan.id));
   row.classList.toggle("is-completed", Boolean(plan.completed));
   row.classList.toggle("is-editing", state.editingRaidPlanIds.has(plan.id));
@@ -485,6 +490,38 @@ function createSavedRaidPlanRow(plan, owners) {
     if (event.target.closest("button, input, select, label")) return;
     selectRaidPlanRow(plan.id);
   });
+  row.addEventListener("dragover", (event) => {
+    if (!state.draggingRaidPlanId || state.draggingRaidPlanId === plan.id) return;
+    event.preventDefault();
+    row.classList.add("is-drag-over");
+  });
+  row.addEventListener("dragleave", () => row.classList.remove("is-drag-over"));
+  row.addEventListener("drop", (event) => {
+    event.preventDefault();
+    row.classList.remove("is-drag-over");
+    reorderSavedRaidPlan(state.draggingRaidPlanId, plan.id);
+  });
+
+  const orderCell = document.createElement("td");
+  orderCell.className = "raid-order-cell";
+  const dragHandle = document.createElement("button");
+  dragHandle.type = "button";
+  dragHandle.className = "raid-drag-handle";
+  dragHandle.draggable = true;
+  dragHandle.setAttribute("aria-label", `${plan.raidName || "레이드"} 순서 변경`);
+  dragHandle.textContent = "☰";
+  dragHandle.addEventListener("click", (event) => event.stopPropagation());
+  dragHandle.addEventListener("dragstart", (event) => {
+    state.draggingRaidPlanId = plan.id;
+    row.classList.add("is-dragging");
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", plan.id);
+  });
+  dragHandle.addEventListener("dragend", () => {
+    state.draggingRaidPlanId = null;
+    renderRaidPlanner();
+  });
+  orderCell.append(dragHandle);
 
   const completedCell = document.createElement("td");
   completedCell.className = "raid-completed-cell";
@@ -507,7 +544,7 @@ function createSavedRaidPlanRow(plan, owners) {
     raidCell.append(raidName);
   }
 
-  row.append(completedCell, raidCell, ...owners.map((owner) => {
+  row.append(orderCell, completedCell, raidCell, ...owners.map((owner) => {
     if (state.editingRaidPlanIds.has(plan.id)) return createRaidOwnerCell(plan, owner, "saved");
     return createSavedRaidOwnerTableCell(plan, owner);
   }));
@@ -554,8 +591,18 @@ function createRaidOwnerCell(plan, owner, scope = "draft") {
   const select = document.createElement("select");
   select.className = "raid-character-select";
   select.add(new Option("", ""));
-  for (const character of getCharactersForOwner(owner)) {
-    select.add(new Option(character.characterName, character.key, character.key === plan.characters?.[owner], character.key === plan.characters?.[owner]));
+  const raidPlans = scope === "saved" ? state.raidPlans : [...state.raidPlans, ...state.raidPlanDrafts];
+  for (const character of getCharactersForOwner(owner).filter((item) => canJoinRaid(item, plan.raidName))) {
+    const option = new Option(character.characterName, character.key, character.key === plan.characters?.[owner], character.key === plan.characters?.[owner]);
+    const optionStatus = getRaidCharacterOptionStatus(plan, character, raidPlans);
+    if (optionStatus.isDuplicate) {
+      option.className = "is-duplicate-option";
+      option.style.color = "var(--danger)";
+    } else if (optionStatus.isExtra) {
+      option.className = "is-extra-option";
+      option.style.color = "var(--option-extra)";
+    }
+    select.add(option);
   }
   select.addEventListener("change", () => {
     if (scope === "saved") updateSavedRaidPlanCharacterLocal(plan.id, owner, select.value);
@@ -786,6 +833,21 @@ async function deleteSelectedRaidPlan() {
   setStatus(ok ? "레이드 편성 삭제 완료" : "레이드 편성 삭제 실패", ok ? "success" : "error");
 }
 
+function reorderSavedRaidPlan(sourceId, targetId) {
+  if (!sourceId || !targetId || sourceId === targetId) return;
+  const rows = [...state.raidPlans];
+  const sourceIndex = rows.findIndex((plan) => plan.id === sourceId);
+  const targetIndex = rows.findIndex((plan) => plan.id === targetId);
+  if (sourceIndex < 0 || targetIndex < 0) return;
+  const [moved] = rows.splice(sourceIndex, 1);
+  rows.splice(targetIndex, 0, moved);
+  state.raidPlans = rows;
+  state.draggingRaidPlanId = null;
+  saveRaidPlans();
+  saveSheetState();
+  renderRaidPlanner();
+}
+
 function pruneRaidPlanSelection() {
   const savedIds = new Set(state.raidPlans.map((plan) => plan.id));
   state.selectedRaidPlanIds = new Set([...state.selectedRaidPlanIds].filter((id) => savedIds.has(id)));
@@ -1014,17 +1076,40 @@ function getRaidPlanCellStatus(plan, character, raidPlans = state.raidPlanDrafts
   };
 }
 
+function getRaidCharacterOptionStatus(plan, character, raidPlans) {
+  const raidName = plan.raidName?.trim();
+  const sameRaidCount = getRaidPlanRows(raidPlans).filter((row) => {
+    if (row.id === plan.id || row.excluded || row.raidName !== raidName) return false;
+    return Object.values(row.characters ?? {}).includes(character.key);
+  }).length;
+  return {
+    isDuplicate: sameRaidCount > 0,
+    isExtra: getExtraRaids(character).includes(raidName),
+  };
+}
+
+function canJoinRaid(character, raidName) {
+  const minLevel = getRaidMinLevel(raidName);
+  return !minLevel || character.itemLevelNumber >= minLevel;
+}
+
+function getRaidMinLevel(raidName) {
+  return raidCatalog.find((raid) => raid.name === raidName)?.minLevel ?? 0;
+}
+
 function getRaidTier(raidName) {
   return raidCatalog.find((raid) => raid.name === raidName)?.tier ?? "base";
 }
 
 function getRaidColorIndex(raidName) {
+  const catalogIndex = raidCatalog.findIndex((raid) => raid.name === raidName);
+  if (catalogIndex >= 0) return (catalogIndex % 18) + 1;
   const source = String(raidName || "");
   let hash = 0;
   for (let index = 0; index < source.length; index += 1) {
     hash = (hash * 31 + source.charCodeAt(index)) % 997;
   }
-  return (hash % 12) + 1;
+  return (hash % 18) + 1;
 }
 
 function getRaidPlanRows(raidPlans = state.raidPlanDrafts) {
