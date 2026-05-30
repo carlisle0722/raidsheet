@@ -1065,7 +1065,7 @@ h3:has(.owner-avatar) {
 }
 
 .raid-saved-table tbody tr.is-completed td.is-extra-raid {
-  background-color: rgba(169, 201, 236, 0.12);
+  background-color: rgba(169, 201, 236, 0.24);
 }
 
 .raid-saved-table tbody tr.is-completed td.is-extra-raid .raid-character-chip {
