@@ -61,14 +61,19 @@
 
         <div id="raid-panel" class="tab-panel" role="tabpanel" aria-labelledby="raid-tab" hidden>
           <section class="raid-planner-section" aria-labelledby="raid-title">
-            <div class="section-heading">
+            <div class="section-heading raid-planner-heading">
               <div><p class="eyebrow">Raid Assignment</p><h2 id="raid-title">레이드 편성</h2></div>
-              <div class="section-actions">
-                <button id="reset-raid-complete-button" class="secondary-button" type="button">체크 초기화</button>
-                <button id="edit-raid-row-button" class="secondary-button" type="button" disabled>수정</button>
-                <button id="delete-raid-row-button" class="secondary-button danger" type="button" disabled>삭제</button>
-                <button id="add-raid-row-button" class="secondary-button" type="button">레이드 추가</button>
-                <button id="save-raid-plan-button" class="primary-button" type="button">저장</button>
+              <div class="raid-toolbar">
+                <div class="section-actions">
+                  <button id="reset-raid-complete-button" class="secondary-button" type="button">체크 초기화</button>
+                </div>
+                <div class="section-actions">
+                  <button id="edit-raid-row-button" class="secondary-button" type="button" disabled>수정</button>
+                  <button id="delete-raid-row-button" class="secondary-button danger" type="button" disabled>삭제</button>
+                  <button id="cancel-raid-edit-button" class="secondary-button" type="button">취소</button>
+                  <button id="add-raid-row-button" class="secondary-button" type="button">레이드 추가</button>
+                  <button id="save-raid-plan-button" class="primary-button" type="button">저장</button>
+                </div>
               </div>
             </div>
             <div class="raid-saved-wrap">

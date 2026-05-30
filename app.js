@@ -83,6 +83,7 @@ const elements = {
   saveRaidPlanButton: document.querySelector("#save-raid-plan-button"),
   editRaidRowButton: document.querySelector("#edit-raid-row-button"),
   deleteRaidRowButton: document.querySelector("#delete-raid-row-button"),
+  cancelRaidEditButton: document.querySelector("#cancel-raid-edit-button"),
   resetRaidCompleteButton: document.querySelector("#reset-raid-complete-button"),
   raidSavedHead: document.querySelector("#raid-saved-head"),
   raidSavedBody: document.querySelector("#raid-saved-body"),
@@ -109,6 +110,7 @@ elements.addRaidRowButton.addEventListener("click", addRaidPlanRow);
 elements.saveRaidPlanButton.addEventListener("click", saveRaidPlanChanges);
 elements.editRaidRowButton.addEventListener("click", editSelectedRaidPlan);
 elements.deleteRaidRowButton.addEventListener("click", deleteSelectedRaidPlan);
+elements.cancelRaidEditButton.addEventListener("click", cancelRaidEdits);
 elements.resetRaidCompleteButton.addEventListener("click", resetRaidCompleted);
 for (const button of elements.tabButtons) {
   button.addEventListener("click", () => activateTab(button.dataset.tabTarget));
@@ -364,13 +366,13 @@ function renderSavedRaidPlanner(owners) {
 function renderRaidEditor(owners) {
   const rows = getRaidPlanRows(state.raidPlanDrafts);
   const headerRow = document.createElement("tr");
-  headerRow.append(createTableHeader("완료"), createTableHeader("레이드명"), ...owners.map(createTableHeader), createTableHeader(""));
+  headerRow.append(createTableHeader("레이드명"), ...owners.map(createTableHeader), createTableHeader(""));
   elements.raidPlanHead.replaceChildren(headerRow);
 
   if (!rows.length) {
     const row = document.createElement("tr");
     const cell = document.createElement("td");
-    cell.colSpan = owners.length + 3;
+    cell.colSpan = owners.length + 2;
     cell.className = "raid-empty-cell";
     cell.textContent = "레이드 추가를 누르면 여기에서 편성할 수 있습니다.";
     row.append(cell);
@@ -400,15 +402,6 @@ function createRaidPlanRow(plan, owners) {
   const row = document.createElement("tr");
   row.dataset.raidPlanId = plan.id;
   row.dataset.raidTier = getRaidTier(plan.raidName);
-
-  const completedCell = document.createElement("td");
-  completedCell.className = "raid-completed-cell";
-  const completed = document.createElement("input");
-  completed.type = "checkbox";
-  completed.checked = Boolean(plan.completed);
-  completed.setAttribute("aria-label", `${plan.raidName || "레이드"} 완료`);
-  completed.addEventListener("change", () => updateRaidPlan(plan.id, { completed: completed.checked }));
-  completedCell.append(completed);
 
   const raidCell = document.createElement("td");
   raidCell.className = "raid-name-cell";
@@ -444,8 +437,7 @@ function createRaidPlanRow(plan, owners) {
   removeButton.addEventListener("click", () => removeRaidPlanRow(plan.id));
   actionsCell.append(removeButton);
 
-  row.classList.toggle("is-completed", Boolean(plan.completed));
-  row.append(completedCell, raidCell, ...ownerCells, actionsCell);
+  row.append(raidCell, ...ownerCells, actionsCell);
   return row;
 }
 
@@ -618,6 +610,7 @@ function addRaidPlanRow() {
 }
 
 async function saveRaidPlanChanges() {
+  if (!validateRaidPlanDrafts()) return;
   state.raidPlans = mergeRaidPlans(state.raidPlans, state.raidPlanDrafts);
   saveRaidPlans();
   elements.saveRaidPlanButton.disabled = true;
@@ -627,6 +620,21 @@ async function saveRaidPlanChanges() {
   state.selectedRaidPlanId = null;
   renderRaidPlanner();
   setStatus(ok ? "레이드 편성 저장 완료" : "레이드 편성 저장 실패", ok ? "success" : "error");
+}
+
+function validateRaidPlanDrafts() {
+  const invalid = getRaidPlanRows(state.raidPlanDrafts).some((plan) => {
+    const hasRaidName = Boolean(plan.raidName?.trim());
+    const hasCharacter = Object.values(plan.characters ?? {}).some(Boolean);
+    return hasRaidName && !hasCharacter;
+  });
+
+  if (invalid) {
+    alert("[캐릭터가 지정되지 않았습니다]");
+    return false;
+  }
+
+  return true;
 }
 
 function removeRaidPlanRow(id) {
@@ -667,6 +675,12 @@ function editSelectedRaidPlan() {
   state.raidPlanDrafts = exists
     ? state.raidPlanDrafts.map((item) => (item.id === plan.id ? { ...plan, characters: { ...(plan.characters ?? {}) } } : item))
     : [...state.raidPlanDrafts, { ...plan, characters: { ...(plan.characters ?? {}) } }];
+  renderRaidPlanner();
+}
+
+function cancelRaidEdits() {
+  state.raidPlanDrafts = [];
+  state.selectedRaidPlanId = null;
   renderRaidPlanner();
 }
 
