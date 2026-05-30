@@ -1022,9 +1022,9 @@ h3:has(.owner-avatar) {
 }
 
 .raid-saved-table td.is-extra-raid .raid-character-chip {
-  border-left: 3px solid var(--option-extra);
   color: var(--option-extra);
-  background: rgba(37, 99, 235, 0.045);
+  background: transparent;
+  border-left: 0;
 }
 
 .raid-character-cell.has-duplicate-option .raid-character-select {
