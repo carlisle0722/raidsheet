@@ -970,12 +970,21 @@ h3:has(.owner-avatar) {
   background-color: rgba(169, 201, 236, 0.22);
 }
 
-.raid-completed-cell input {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--accent);
+.raid-saved-table .raid-complete-col {
+  width: 42px;
 }
 
+.raid-completed-cell {
+  padding: 0 !important;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.raid-completed-cell input {
+  margin: 0;
+}
 .raid-order-cell {
   width: 42px;
   padding: 2px 4px !important;
