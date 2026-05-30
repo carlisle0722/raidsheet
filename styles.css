@@ -983,7 +983,10 @@ h3:has(.owner-avatar) {
 }
 
 .raid-completed-cell input {
+  width: 18px;
+  height: 18px;
   margin: 0;
+  accent-color: var(--accent);
 }
 .raid-order-cell {
   width: 42px;
