@@ -51,6 +51,17 @@ const raidRecommendations = [
   { minLevel: 1710, primary: ["세르카 노말", "종막 노말", "4막 노말"], extra: ["성당 1단계"] },
   { minLevel: 1700, primary: ["4막 노말", "성당 1단계", "3막 하드"], extra: [] },
 ];
+const raidFilterOrder = [
+  "성당 3단계",
+  "세르카 나메",
+  "세르카 하드",
+  "종막 하드",
+  "4막 하드",
+  "성당 2단계",
+  "종막 노말",
+  "세르카 노말",
+  "3막 하드",
+];
 
 const state = {
   accounts: loadAccounts(),
@@ -1204,8 +1215,17 @@ function getFilteredRaidPlanRows(rows) {
 
 function getRaidFilterOptions() {
   return uniqueStrings(state.raidPlans.map((plan) => plan.raidName))
-    .sort((a, b) => a.localeCompare(b, "ko-KR"))
+    .sort(compareRaidFilterOrder)
     .map((raidName) => ({ label: raidName, value: raidName }));
+}
+
+function compareRaidFilterOrder(a, b) {
+  const aIndex = raidFilterOrder.indexOf(a);
+  const bIndex = raidFilterOrder.indexOf(b);
+  if (aIndex >= 0 && bIndex >= 0) return aIndex - bIndex;
+  if (aIndex >= 0) return -1;
+  if (bIndex >= 0) return 1;
+  return a.localeCompare(b, "ko-KR");
 }
 
 function getCharacterFilterOptions(owner) {

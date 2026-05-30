@@ -784,7 +784,7 @@ h3:has(.owner-avatar) {
 
 .raid-saved-table tbody tr.is-completed td,
 .raid-planner-table tbody tr.is-completed td {
-  background-color: rgba(169, 201, 236, 0.16);
+  background-color: rgba(169, 201, 236, 0.12);
 }
 
 .raid-name-cell {
@@ -891,30 +891,27 @@ h3:has(.owner-avatar) {
   position: relative;
   display: inline-grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
 }
 
 .raid-filter-icon {
   position: relative;
-  display: block;
-  width: 18px;
-  height: 18px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
   border: 1px solid var(--line-strong);
   border-radius: 6px;
   background: #fff;
+  color: var(--muted);
 }
 
 .raid-filter-icon::before {
-  position: absolute;
-  top: 4px;
-  left: 5px;
-  width: 6px;
-  height: 6px;
-  border-right: 2px solid var(--muted);
-  border-bottom: 2px solid var(--muted);
-  transform: rotate(45deg);
-  content: "";
+  margin-top: -2px;
+  font-size: 0.72rem;
+  line-height: 1;
+  content: "▾";
 }
 
 .raid-filter-select {
@@ -1009,10 +1006,9 @@ h3:has(.owner-avatar) {
   min-height: 30px;
   margin-top: 0;
   padding: 2px 8px;
-  border: 1px solid #e4e8ef;
-  border-inline: 4px solid #d8dee8;
-  border-radius: 6px;
-  background: var(--chip-bg);
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
   color: var(--ink);
   font-size: 0.96rem;
   font-weight: 600;
@@ -1025,6 +1021,12 @@ h3:has(.owner-avatar) {
   color: var(--danger);
 }
 
+.raid-saved-table td.is-extra-raid .raid-character-chip {
+  border-left: 3px solid var(--option-extra);
+  color: var(--option-extra);
+  background: rgba(37, 99, 235, 0.045);
+}
+
 .raid-character-cell.has-duplicate-option .raid-character-select {
   color: var(--danger);
 }
@@ -1035,9 +1037,9 @@ h3:has(.owner-avatar) {
 
 .raid-saved-table td.is-extra-raid,
 .raid-planner-table td.is-extra-raid .raid-character-select {
-  border-color: rgba(37, 99, 235, 0.36);
+  border-color: rgba(37, 99, 235, 0.28);
   color: var(--ink);
-  background: rgba(37, 99, 235, 0.055);
+  background: var(--surface);
   font-weight: 650;
 }
 
@@ -1059,7 +1061,15 @@ h3:has(.owner-avatar) {
 .raid-planner-table tbody tr.is-completed td,
 .raid-saved-table tbody tr.is-completed td[data-tier],
 .raid-planner-table tbody tr.is-completed td[data-tier] {
-  background-color: rgba(169, 201, 236, 0.22);
+  background-color: rgba(169, 201, 236, 0.12);
+}
+
+.raid-saved-table tbody tr.is-completed td.is-extra-raid {
+  background-color: rgba(169, 201, 236, 0.12);
+}
+
+.raid-saved-table tbody tr.is-completed td.is-extra-raid .raid-character-chip {
+  background: rgba(37, 99, 235, 0.075);
 }
 
 .raid-saved-table .raid-complete-col {
