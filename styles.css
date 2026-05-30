@@ -1388,3 +1388,52 @@ h3:has(.owner-avatar) {
     grid-template-columns: 1fr;
   }
 }
+
+/* ===== 저장 레이드 표 ===== */
+
+.raid-summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+  font-size: 0.9rem;
+}
+
+.raid-summary-table th {
+  padding: 8px;
+  border: 1px solid var(--line);
+  background: #f5f7fa;
+  font-weight: 900;
+  text-align: center;
+}
+
+.raid-summary-table td {
+  padding: 6px;
+  border: 1px solid var(--line);
+  text-align: center;
+  vertical-align: middle;
+}
+
+.raid-summary-table td strong {
+  display: block;
+  font-size: 0.9rem;
+}
+
+.raid-summary-table .raid-level {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.raid-summary-table .raid-column {
+  width: 140px;
+  font-weight: 900;
+  background: #fafafa;
+}
+
+.raid-summary-table td.empty {
+  color: #bbb;
+}
+
+.raid-saved-board {
+  display: block;
+  margin-bottom: 12px;
+}

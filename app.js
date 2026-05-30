@@ -350,12 +350,64 @@ function renderSavedRaidPlanner(owners) {
   if (!rows.length) {
     const message = document.createElement("p");
     message.className = "column-message raid-saved-empty";
-    message.textContent = "아래에서 레이드를 추가하고 저장하면 편성표가 표시됩니다.";
+    message.textContent =
+      "아래에서 레이드를 추가하고 저장하면 편성표가 표시됩니다.";
     elements.raidSavedBoard.replaceChildren(message);
     return;
   }
 
-  elements.raidSavedBoard.replaceChildren(...rows.map((plan) => createSavedRaidPlanCard(plan, owners)));
+  const table = document.createElement("table");
+  table.className = "raid-summary-table";
+
+  const thead = document.createElement("thead");
+  const headRow = document.createElement("tr");
+
+  headRow.append(createTableHeader("레이드"));
+
+  owners.forEach((owner) => {
+    headRow.append(createTableHeader(owner));
+  });
+
+  thead.append(headRow);
+
+  const tbody = document.createElement("tbody");
+
+  rows.forEach((plan) => {
+    const tr = document.createElement("tr");
+
+    const raidTd = document.createElement("td");
+    raidTd.className = "raid-column";
+    raidTd.textContent = plan.raidName;
+    tr.append(raidTd);
+
+    owners.forEach((owner) => {
+      const td = document.createElement("td");
+
+      const character = findCharacterByKey(
+        plan.characters?.[owner]
+      );
+
+      if (character) {
+        td.innerHTML = `
+          <strong>${character.characterName}</strong>
+          <div class="raid-level">
+            ${character.itemAvgLevel}
+          </div>
+        `;
+      } else {
+        td.className = "empty";
+        td.textContent = "-";
+      }
+
+      tr.append(td);
+    });
+
+    tbody.append(tr);
+  });
+
+  table.append(thead, tbody);
+
+  elements.raidSavedBoard.replaceChildren(table);
 }
 
 function renderRaidEditor(owners) {
