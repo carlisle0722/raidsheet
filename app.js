@@ -357,6 +357,7 @@ function createTableHeader(label) {
 function createRaidPlanRow(plan, owners) {
   const row = document.createElement("tr");
   row.dataset.raidPlanId = plan.id;
+  row.dataset.raidTier = getRaidTier(plan.raidName);
 
   const excludedCell = document.createElement("td");
   excludedCell.className = "raid-excluded-cell";
@@ -410,6 +411,7 @@ function createRaidOwnerCell(plan, owner) {
   const character = findCharacterByKey(plan.characters?.[owner]);
   if (character) {
     const status = getRaidPlanCellStatus(plan, character);
+    cell.dataset.tier = getLevelTier(character.itemLevelNumber);
     cell.classList.toggle("is-extra-raid", status.isExtra);
     cell.classList.toggle("is-excluded-raid", status.isExcluded);
     cell.classList.toggle("is-duplicate-raid", status.isDuplicate);
@@ -766,6 +768,10 @@ function getRaidPlanCellStatus(plan, character) {
     isExcluded: Boolean(plan.excluded) || (!!raidName && !recommended.includes(raidName) && !extra.includes(raidName)),
     isDuplicate: sameRaidCount > 1,
   };
+}
+
+function getRaidTier(raidName) {
+  return raidCatalog.find((raid) => raid.name === raidName)?.tier ?? "base";
 }
 
 function getRaidPlanRows() {
