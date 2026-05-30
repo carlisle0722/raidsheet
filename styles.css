@@ -616,6 +616,134 @@ h3:has(.owner-avatar) {
   box-shadow: 0 12px 30px rgba(24, 31, 42, 0.06);
 }
 
+.raid-saved-board {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.raid-plan-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  box-shadow: 0 12px 30px rgba(24, 31, 42, 0.06);
+  cursor: pointer;
+}
+
+.raid-plan-card.is-selected {
+  border-color: rgba(47, 111, 106, 0.38);
+  box-shadow:
+    inset 0 0 0 2px rgba(47, 111, 106, 0.18),
+    0 12px 30px rgba(24, 31, 42, 0.06);
+}
+
+.raid-plan-card.is-completed {
+  background: rgba(169, 201, 236, 0.18);
+}
+
+.raid-plan-card-heading {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.raid-plan-card-heading input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
+.raid-plan-title {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  width: fit-content;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 999px;
+  padding: 6px 12px;
+  color: var(--ink);
+  background: var(--surface);
+  font-size: 0.98rem;
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.raid-plan-card[data-raid-color="1"] .raid-plan-title { background: #ffe4e6; }
+.raid-plan-card[data-raid-color="2"] .raid-plan-title { background: #ffedd5; }
+.raid-plan-card[data-raid-color="3"] .raid-plan-title { background: #fef3c7; }
+.raid-plan-card[data-raid-color="4"] .raid-plan-title { background: #dcfce7; }
+.raid-plan-card[data-raid-color="5"] .raid-plan-title { background: #ccfbf1; }
+.raid-plan-card[data-raid-color="6"] .raid-plan-title { background: #dbeafe; }
+.raid-plan-card[data-raid-color="7"] .raid-plan-title { background: #e0e7ff; }
+.raid-plan-card[data-raid-color="8"] .raid-plan-title { background: #ede9fe; }
+.raid-plan-card[data-raid-color="9"] .raid-plan-title { background: #fce7f3; }
+.raid-plan-card[data-raid-color="10"] .raid-plan-title { background: #e2e8f0; }
+.raid-plan-card[data-raid-color="11"] .raid-plan-title { background: #d9f99d; }
+.raid-plan-card[data-raid-color="12"] .raid-plan-title { background: #bae6fd; }
+
+.raid-plan-members {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 8px;
+}
+
+.raid-member-card {
+  min-width: 0;
+  min-height: 64px;
+  border-top: 4px solid var(--tier-base);
+  border-radius: 6px;
+  padding: 8px 10px;
+  background: var(--surface);
+}
+
+.raid-member-card small,
+.raid-member-empty {
+  display: block;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.raid-member-card strong {
+  display: block;
+  overflow: hidden;
+  margin-top: 3px;
+  font-size: 0.94rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.raid-member-card span:not(.raid-member-empty) {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.raid-member-card[data-tier="ancient"] { border-top-color: var(--tier-red); background: rgba(231, 163, 163, 0.09); }
+.raid-member-card[data-tier="red"] { border-top-color: var(--tier-gold); background: rgba(240, 206, 134, 0.1); }
+.raid-member-card[data-tier="green"] { border-top-color: var(--tier-green); background: rgba(169, 216, 189, 0.1); }
+.raid-member-card[data-tier="blue"] { border-top-color: var(--tier-blue); background: rgba(169, 201, 236, 0.1); }
+.raid-member-card[data-tier="low"] { border-top-color: var(--tier-low); background: rgba(207, 212, 220, 0.16); }
+.raid-member-card[data-tier="base"] { border-top-color: var(--tier-base); background: rgba(199, 183, 242, 0.11); }
+
+.raid-inline-editor {
+  display: grid;
+  align-content: center;
+  gap: 6px;
+}
+
 .raid-editor-area {
   padding-top: 2px;
 }

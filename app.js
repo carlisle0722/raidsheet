@@ -59,6 +59,8 @@ const state = {
   raidPlans: loadRaidPlans(),
   raidPlanDrafts: [],
   selectedRaidPlanId: null,
+  editingRaidPlanId: null,
+  raidPlanEditBackup: null,
   isLoading: false,
   isRemoteReady: false,
   lastUpdatedAt: null,
@@ -85,8 +87,7 @@ const elements = {
   deleteRaidRowButton: document.querySelector("#delete-raid-row-button"),
   cancelRaidEditButton: document.querySelector("#cancel-raid-edit-button"),
   resetRaidCompleteButton: document.querySelector("#reset-raid-complete-button"),
-  raidSavedHead: document.querySelector("#raid-saved-head"),
-  raidSavedBody: document.querySelector("#raid-saved-body"),
+  raidSavedBoard: document.querySelector("#raid-saved-board"),
   raidPlanHead: document.querySelector("#raid-plan-head"),
   raidPlanBody: document.querySelector("#raid-plan-body"),
   raidPlanSummary: document.querySelector("#raid-plan-summary"),
@@ -345,22 +346,16 @@ function renderRaidPlanner() {
 
 function renderSavedRaidPlanner(owners) {
   const rows = getRaidPlanRows(state.raidPlans);
-  const headerRow = document.createElement("tr");
-  headerRow.append(createTableHeader("완료"), createTableHeader("레이드명"), ...owners.map(createTableHeader));
-  elements.raidSavedHead.replaceChildren(headerRow);
 
   if (!rows.length) {
-    const row = document.createElement("tr");
-    const cell = document.createElement("td");
-    cell.colSpan = owners.length + 2;
-    cell.className = "raid-empty-cell";
-    cell.textContent = "아래에서 레이드를 추가하고 저장하면 편성표가 표시됩니다.";
-    row.append(cell);
-    elements.raidSavedBody.replaceChildren(row);
+    const message = document.createElement("p");
+    message.className = "column-message raid-saved-empty";
+    message.textContent = "아래에서 레이드를 추가하고 저장하면 편성표가 표시됩니다.";
+    elements.raidSavedBoard.replaceChildren(message);
     return;
   }
 
-  elements.raidSavedBody.replaceChildren(...rows.map((plan) => createSavedRaidPlanRow(plan, owners)));
+  elements.raidSavedBoard.replaceChildren(...rows.map((plan) => createSavedRaidPlanCard(plan, owners)));
 }
 
 function renderRaidEditor(owners) {
@@ -389,6 +384,7 @@ function renderRaidPlanActions() {
   const hasSelected = Boolean(state.selectedRaidPlanId && state.raidPlans.some((plan) => plan.id === state.selectedRaidPlanId));
   elements.editRaidRowButton.disabled = !hasSelected;
   elements.deleteRaidRowButton.disabled = !hasSelected;
+  elements.editRaidRowButton.textContent = state.editingRaidPlanId ? "수정 중" : "수정";
 }
 
 function createTableHeader(label) {
@@ -405,26 +401,7 @@ function createRaidPlanRow(plan, owners) {
 
   const raidCell = document.createElement("td");
   raidCell.className = "raid-name-cell";
-  const raidSelect = document.createElement("select");
-  raidSelect.className = "raid-name-select";
-  for (const raid of raidCatalog) {
-    raidSelect.add(new Option(raid.name, raid.name, raid.name === plan.raidName, raid.name === plan.raidName));
-  }
-  raidSelect.add(new Option("직접 입력", "__custom__", !raidCatalog.some((raid) => raid.name === plan.raidName), !raidCatalog.some((raid) => raid.name === plan.raidName)));
-  const customInput = document.createElement("input");
-  customInput.className = "raid-name-input";
-  customInput.type = "text";
-  customInput.value = raidCatalog.some((raid) => raid.name === plan.raidName) ? "" : plan.raidName;
-  customInput.placeholder = "레이드명";
-  customInput.hidden = raidSelect.value !== "__custom__";
-  raidSelect.addEventListener("change", () => {
-    const isCustom = raidSelect.value === "__custom__";
-    customInput.hidden = !isCustom;
-    updateRaidPlan(plan.id, { raidName: isCustom ? customInput.value.trim() : raidSelect.value });
-  });
-  customInput.addEventListener("input", () => updateRaidPlan(plan.id, { raidName: customInput.value.trim() }, false));
-  raidCell.append(raidSelect, customInput);
-
+  raidCell.append(...createRaidNameSelect(plan, (raidName, shouldRender) => updateRaidPlan(plan.id, { raidName }, shouldRender)));
   const ownerCells = owners.map((owner) => createRaidOwnerCell(plan, owner));
 
   const actionsCell = document.createElement("td");
@@ -441,38 +418,83 @@ function createRaidPlanRow(plan, owners) {
   return row;
 }
 
-function createSavedRaidPlanRow(plan, owners) {
-  const row = document.createElement("tr");
-  row.dataset.raidPlanId = plan.id;
-  row.dataset.raidTier = getRaidTier(plan.raidName);
-  row.classList.toggle("is-selected", state.selectedRaidPlanId === plan.id);
-  row.classList.toggle("is-completed", Boolean(plan.completed));
-  row.addEventListener("click", () => selectRaidPlanRow(plan.id));
+function createRaidNameSelect(plan, onChange) {
+  const raidSelect = document.createElement("select");
+  raidSelect.className = "raid-name-select";
+  const isCatalogRaid = raidCatalog.some((raid) => raid.name === plan.raidName);
+  for (const raid of raidCatalog) {
+    raidSelect.add(new Option(raid.name, raid.name, raid.name === plan.raidName, raid.name === plan.raidName));
+  }
+  raidSelect.add(new Option("직접 입력", "__custom__", !isCatalogRaid, !isCatalogRaid));
+  const customInput = document.createElement("input");
+  customInput.className = "raid-name-input";
+  customInput.type = "text";
+  customInput.value = isCatalogRaid ? "" : plan.raidName;
+  customInput.placeholder = "레이드명";
+  customInput.hidden = raidSelect.value !== "__custom__";
+  raidSelect.addEventListener("change", () => {
+    const isCustom = raidSelect.value === "__custom__";
+    customInput.hidden = !isCustom;
+    onChange(isCustom ? customInput.value.trim() : raidSelect.value, true);
+  });
+  customInput.addEventListener("input", () => onChange(customInput.value.trim(), false));
+  return [raidSelect, customInput];
+}
 
-  const completedCell = document.createElement("td");
-  completedCell.className = "raid-completed-cell";
+function createSavedRaidPlanCard(plan, owners) {
+  const card = document.createElement("article");
+  card.className = "raid-plan-card";
+  card.dataset.raidPlanId = plan.id;
+  card.dataset.raidTier = getRaidTier(plan.raidName);
+  card.dataset.raidColor = getRaidColorIndex(plan.raidName);
+  card.classList.toggle("is-selected", state.selectedRaidPlanId === plan.id);
+  card.classList.toggle("is-completed", Boolean(plan.completed));
+  card.classList.toggle("is-editing", state.editingRaidPlanId === plan.id);
+  card.addEventListener("click", () => selectRaidPlanRow(plan.id));
+
+  const header = document.createElement("div");
+  header.className = "raid-plan-card-heading";
   const completed = document.createElement("input");
   completed.type = "checkbox";
   completed.checked = Boolean(plan.completed);
   completed.setAttribute("aria-label", `${plan.raidName || "레이드"} 완료`);
   completed.addEventListener("click", (event) => event.stopPropagation());
   completed.addEventListener("change", () => updateSavedRaidPlan(plan.id, { completed: completed.checked }));
-  completedCell.append(completed);
 
-  const raidCell = document.createElement("td");
-  raidCell.className = "raid-name-cell raid-name-readonly";
-  raidCell.textContent = plan.raidName || "-";
+  const title = document.createElement("strong");
+  title.className = "raid-plan-title";
+  title.textContent = plan.raidName || "-";
+  header.append(completed, title);
 
-  const ownerCells = owners.map((owner) => createSavedRaidOwnerCell(plan, owner));
-  row.append(completedCell, raidCell, ...ownerCells);
-  return row;
+  const body = document.createElement("div");
+  body.className = "raid-plan-members";
+  if (state.editingRaidPlanId === plan.id) {
+    body.append(createInlineRaidNameEditor(plan), ...owners.map((owner) => createRaidOwnerCell(plan, owner, "saved")));
+  } else {
+    body.append(...owners.map((owner) => createSavedRaidOwnerCell(plan, owner)));
+  }
+
+  card.append(header, body);
+  return card;
+}
+
+function createInlineRaidNameEditor(plan) {
+  const cell = document.createElement("div");
+  cell.className = "raid-member-card raid-inline-editor raid-name-cell";
+  const raidSelect = createRaidNameSelect(plan, (raidName) => updateSavedRaidPlanLocal(plan.id, { raidName }));
+  cell.append(...raidSelect);
+  return cell;
 }
 
 function createSavedRaidOwnerCell(plan, owner) {
-  const cell = document.createElement("td");
+  const cell = document.createElement("div");
+  cell.className = "raid-member-card";
   const character = findCharacterByKey(plan.characters?.[owner]);
   if (!character) {
-    cell.textContent = "";
+    const empty = document.createElement("span");
+    empty.className = "raid-member-empty";
+    empty.textContent = owner;
+    cell.append(empty);
     return cell;
   }
   const status = getRaidPlanCellStatus(plan, character, state.raidPlans);
@@ -485,15 +507,18 @@ function createSavedRaidOwnerCell(plan, owner) {
   name.textContent = character.characterName;
   const level = document.createElement("span");
   level.textContent = character.itemAvgLevel;
-  cell.append(name, level);
+  const ownerLabel = document.createElement("small");
+  ownerLabel.textContent = owner;
+  cell.append(ownerLabel, name, level);
   return cell;
 }
 
-function createRaidOwnerCell(plan, owner) {
-  const cell = document.createElement("td");
+function createRaidOwnerCell(plan, owner, scope = "draft") {
+  const cell = document.createElement(scope === "saved" ? "div" : "td");
+  if (scope === "saved") cell.className = "raid-member-card raid-inline-editor";
   const character = findCharacterByKey(plan.characters?.[owner]);
   if (character) {
-    const status = getRaidPlanCellStatus(plan, character, state.raidPlanDrafts);
+    const status = getRaidPlanCellStatus(plan, character, scope === "saved" ? state.raidPlans : state.raidPlanDrafts);
     cell.dataset.tier = getLevelTier(character.itemLevelNumber);
     cell.classList.toggle("is-extra-raid", status.isExtra);
     cell.classList.toggle("is-excluded-raid", status.isExcluded);
@@ -505,7 +530,10 @@ function createRaidOwnerCell(plan, owner) {
   for (const character of getCharactersForOwner(owner)) {
     select.add(new Option(character.characterName, character.key, character.key === plan.characters?.[owner], character.key === plan.characters?.[owner]));
   }
-  select.addEventListener("change", () => updateRaidPlanCharacter(plan.id, owner, select.value));
+  select.addEventListener("change", () => {
+    if (scope === "saved") updateSavedRaidPlanCharacterLocal(plan.id, owner, select.value);
+    else updateRaidPlanCharacter(plan.id, owner, select.value);
+  });
   cell.append(select);
   return cell;
 }
@@ -618,19 +646,21 @@ async function saveRaidPlanChanges() {
   elements.saveRaidPlanButton.disabled = false;
   if (ok) state.raidPlanDrafts = [];
   state.selectedRaidPlanId = null;
+  state.editingRaidPlanId = null;
+  state.raidPlanEditBackup = null;
   renderRaidPlanner();
   setStatus(ok ? "레이드 편성 저장 완료" : "레이드 편성 저장 실패", ok ? "success" : "error");
 }
 
 function validateRaidPlanDrafts() {
-  const invalid = getRaidPlanRows(state.raidPlanDrafts).some((plan) => {
+  const invalid = [...getRaidPlanRows(state.raidPlanDrafts), ...getRaidPlanRows(state.raidPlans)].some((plan) => {
     const hasRaidName = Boolean(plan.raidName?.trim());
     const hasCharacter = Object.values(plan.characters ?? {}).some(Boolean);
     return hasRaidName && !hasCharacter;
   });
 
   if (invalid) {
-    alert("[캐릭터가 지정되지 않았습니다]");
+    alert("[\uCE90\uB9AD\uD130\uAC00 \uC9C0\uC815\uB418\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4]");
     return false;
   }
 
@@ -663,6 +693,20 @@ async function updateSavedRaidPlan(id, patch) {
   renderRaidPlanner();
 }
 
+function updateSavedRaidPlanLocal(id, patch, shouldRender = true) {
+  state.raidPlans = getRaidPlanRows(state.raidPlans).map((plan) => (plan.id === id ? { ...plan, ...patch } : plan));
+  if (shouldRender) renderRaidPlanner();
+  else renderRaidPlanSummary();
+}
+
+function updateSavedRaidPlanCharacterLocal(id, owner, key) {
+  state.raidPlans = getRaidPlanRows(state.raidPlans).map((plan) => {
+    if (plan.id !== id) return plan;
+    return { ...plan, characters: { ...(plan.characters ?? {}), [owner]: key } };
+  });
+  renderRaidPlanner();
+}
+
 function selectRaidPlanRow(id) {
   state.selectedRaidPlanId = state.selectedRaidPlanId === id ? null : id;
   renderRaidPlanner();
@@ -671,16 +715,17 @@ function selectRaidPlanRow(id) {
 function editSelectedRaidPlan() {
   const plan = state.raidPlans.find((item) => item.id === state.selectedRaidPlanId);
   if (!plan) return;
-  const exists = state.raidPlanDrafts.some((item) => item.id === plan.id);
-  state.raidPlanDrafts = exists
-    ? state.raidPlanDrafts.map((item) => (item.id === plan.id ? { ...plan, characters: { ...(plan.characters ?? {}) } } : item))
-    : [...state.raidPlanDrafts, { ...plan, characters: { ...(plan.characters ?? {}) } }];
+  if (state.editingRaidPlanId !== plan.id) state.raidPlanEditBackup = cloneRaidPlans(state.raidPlans);
+  state.editingRaidPlanId = state.editingRaidPlanId === plan.id ? null : plan.id;
   renderRaidPlanner();
 }
 
 function cancelRaidEdits() {
+  if (state.raidPlanEditBackup) state.raidPlans = cloneRaidPlans(state.raidPlanEditBackup);
   state.raidPlanDrafts = [];
   state.selectedRaidPlanId = null;
+  state.editingRaidPlanId = null;
+  state.raidPlanEditBackup = null;
   renderRaidPlanner();
 }
 
@@ -689,6 +734,8 @@ async function deleteSelectedRaidPlan() {
   state.raidPlans = state.raidPlans.filter((plan) => plan.id !== state.selectedRaidPlanId);
   state.raidPlanDrafts = state.raidPlanDrafts.filter((plan) => plan.id !== state.selectedRaidPlanId);
   state.selectedRaidPlanId = null;
+  state.editingRaidPlanId = null;
+  state.raidPlanEditBackup = null;
   saveRaidPlans();
   const ok = await saveSheetState();
   renderRaidPlanner();
@@ -921,6 +968,15 @@ function getRaidTier(raidName) {
   return raidCatalog.find((raid) => raid.name === raidName)?.tier ?? "base";
 }
 
+function getRaidColorIndex(raidName) {
+  const source = String(raidName || "");
+  let hash = 0;
+  for (let index = 0; index < source.length; index += 1) {
+    hash = (hash * 31 + source.charCodeAt(index)) % 997;
+  }
+  return (hash % 12) + 1;
+}
+
 function getRaidPlanRows(raidPlans = state.raidPlanDrafts) {
   const owners = getOwners();
   return normalizeRaidPlans(raidPlans).map((plan) => ({
@@ -1131,6 +1187,7 @@ function normalizeAccounts(accounts) {
     const queryName = String(account?.queryName ?? "").trim();
     const owner = String(account?.owner ?? "").trim();
     if (!queryName || !owner) return null;
+    if (ownerOptions.some((defaultOwner) => defaultOwner !== owner && queryName.startsWith(defaultOwner))) return null;
     return {
       id: String(account?.id ?? `account-${index}`).trim() || `account-${index}`,
       label: label || queryName,
