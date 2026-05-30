@@ -83,6 +83,7 @@ const elements = {
   assignedRosterBoard: document.querySelector("#assigned-roster-board"),
   addRaidRowButton: document.querySelector("#add-raid-row-button"),
   saveRaidPlanButton: document.querySelector("#save-raid-plan-button"),
+  saveRaidPlanBottomButton: document.querySelector("#save-raid-plan-bottom-button"),
   editRaidRowButton: document.querySelector("#edit-raid-row-button"),
   deleteRaidRowButton: document.querySelector("#delete-raid-row-button"),
   cancelRaidEditButton: document.querySelector("#cancel-raid-edit-button"),
@@ -109,6 +110,7 @@ elements.addAccountButton.addEventListener("click", addAccountEditorRow);
 elements.saveAccountsButton.addEventListener("click", saveAccountEditor);
 elements.addRaidRowButton.addEventListener("click", addRaidPlanRow);
 elements.saveRaidPlanButton.addEventListener("click", saveRaidPlanChanges);
+elements.saveRaidPlanBottomButton.addEventListener("click", saveRaidPlanChanges);
 elements.editRaidRowButton.addEventListener("click", editSelectedRaidPlan);
 elements.deleteRaidRowButton.addEventListener("click", deleteSelectedRaidPlan);
 elements.cancelRaidEditButton.addEventListener("click", cancelRaidEdits);
@@ -667,8 +669,10 @@ async function saveRaidPlanChanges() {
   state.raidPlans = mergeRaidPlans(state.raidPlans, state.raidPlanDrafts);
   saveRaidPlans();
   elements.saveRaidPlanButton.disabled = true;
+  elements.saveRaidPlanBottomButton.disabled = true;
   const ok = await saveSheetState();
   elements.saveRaidPlanButton.disabled = false;
+  elements.saveRaidPlanBottomButton.disabled = false;
   if (ok) state.raidPlanDrafts = [];
   state.selectedRaidPlanIds.clear();
   state.editingRaidPlanIds.clear();
@@ -733,6 +737,7 @@ function updateSavedRaidPlanCharacterLocal(id, owner, key) {
 }
 
 function selectRaidPlanRow(id) {
+  if (state.editingRaidPlanIds.has(id)) return;
   if (state.selectedRaidPlanIds.has(id)) {
     state.selectedRaidPlanIds.delete(id);
     state.editingRaidPlanIds.delete(id);
