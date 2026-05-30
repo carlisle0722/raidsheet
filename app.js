@@ -227,8 +227,11 @@ function renderProfileBoard() {
 
     button.append(image, input);
     button.addEventListener("click", () => input.click());
+    
+    const name = document.createElement("strong");
+    name.textContent = owner;
 
-    card.append(button);
+    card.append(button, name);
     return card;
   });
 
