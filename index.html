@@ -36,12 +36,12 @@
           <p class="hint">골드 기준 · 추가 레이드 참고</p>
         </div>
         <div class="raid-guide-list">
-          <article class="raid-guide-card" data-tier="ancient"><strong>Lv.1750+</strong><div><p>세르카 나메 · 종막 하드 · 강습 3관문</p><span>추가: 4막 하드</span></div></article>
-          <article class="raid-guide-card" data-tier="red"><strong>Lv.1740+</strong><div><p>세르카 나메 · 종막 하드 · 4막 하드</p><span>추가: 강습 2관문</span></div></article>
-          <article class="raid-guide-card" data-tier="green"><strong>Lv.1730+</strong><div><p>세르카 하드 · 종막 하드 · 4막 하드</p><span>추가: 강습 2관문</span></div></article>
-          <article class="raid-guide-card" data-tier="blue"><strong>Lv.1720+</strong><div><p>4막 하드 · 강습 2관문 · 종막 노말</p><span>추가: 세르카  노말</span></div></article>
-          <article class="raid-guide-card" data-tier="low"><strong>Lv.1710+</strong><div><p>세르카 노말 · 종막 노말 · 4막 노말</p><span>추가: 강습 1관문</span></div></article>
-          <article class="raid-guide-card" data-tier="base"><strong>Lv.1700+</strong><div><p>4막 노말 · 강습 1관문 · 3막 하드</p><span>추가: 없음</span></div></article>
+          <article class="raid-guide-card" data-tier="ancient"><strong>Lv.1750+</strong><div><p>세르카 나메 · 종막 하드 · 성당 3단계</p><span>추가: 4막 하드</span></div></article>
+          <article class="raid-guide-card" data-tier="red"><strong>Lv.1740+</strong><div><p>세르카 나메 · 종막 하드 · 4막 하드</p><span>추가: 성당 2단계</span></div></article>
+          <article class="raid-guide-card" data-tier="green"><strong>Lv.1730+</strong><div><p>세르카 하드 · 종막 하드 · 4막 하드</p><span>추가: 성당 2단계</span></div></article>
+          <article class="raid-guide-card" data-tier="blue"><strong>Lv.1720+</strong><div><p>4막 하드 · 성당 2단계 · 종막 노말</p><span>추가: 세르카 노말</span></div></article>
+          <article class="raid-guide-card" data-tier="low"><strong>Lv.1710+</strong><div><p>세르카 노말 · 종막 노말 · 4막 노말</p><span>추가: 성당 1단계</span></div></article>
+          <article class="raid-guide-card" data-tier="base"><strong>Lv.1700+</strong><div><p>4막 노말 · 성당 1단계 · 3막 하드</p><span>추가: 없음</span></div></article>
         </div>
       </section>
 
@@ -98,9 +98,12 @@
         </div>
 
         <div id="missing-panel" class="tab-panel" role="tabpanel" aria-labelledby="missing-tab" hidden>
-          <section class="empty-section" aria-labelledby="missing-title">
-            <div class="section-heading"><div><p class="eyebrow">Missing Raid</p><h2 id="missing-title">누락 레이드</h2></div></div>
-            <div class="empty-state">아직 표시할 누락 레이드가 없습니다.</div>
+          <section class="missing-raid-section" aria-labelledby="missing-title">
+            <div class="section-heading">
+              <div><p class="eyebrow">Missing Raid</p><h2 id="missing-title">누락 레이드</h2></div>
+              <p class="hint">편성표에 아직 들어가지 않은 필수/추가 레이드</p>
+            </div>
+            <div id="missing-raid-board" class="missing-raid-board"></div>
           </section>
         </div>
 

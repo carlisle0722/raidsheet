@@ -107,6 +107,7 @@ const elements = {
   raidPlanHead: document.querySelector("#raid-plan-head"),
   raidPlanBody: document.querySelector("#raid-plan-body"),
   raidPlanSummary: document.querySelector("#raid-plan-summary"),
+  missingRaidBoard: document.querySelector("#missing-raid-board"),
   tabButtons: [...document.querySelectorAll("[data-tab-target]")],
   tabPanels: [...document.querySelectorAll(".tab-panel")],
   ownerCount: document.querySelector("#owner-count"),
@@ -193,6 +194,7 @@ function renderAll() {
   renderAssignmentBoard();
   renderRosterBoard();
   renderRaidPlanner();
+  renderMissingRaidBoard();
 }
 
 function renderSummary() {
@@ -226,10 +228,7 @@ function renderProfileBoard() {
     button.append(image, input);
     button.addEventListener("click", () => input.click());
 
-    const name = document.createElement("strong");
-    name.textContent = owner;
-
-    card.append(button, name);
+    card.append(button);
     return card;
   });
 
@@ -355,6 +354,111 @@ function renderAssignedRosterBoard() {
   elements.assignedRosterBoard.replaceChildren(...columns);
 }
 
+function renderMissingRaidBoard() {
+  if (!elements.missingRaidBoard) return;
+  const owners = getOwners();
+  elements.missingRaidBoard.replaceChildren(...owners.map((owner) => createMissingOwnerCard(owner)));
+}
+
+function createMissingOwnerCard(owner) {
+  const card = document.createElement("article");
+  card.className = "missing-owner-card";
+
+  const heading = document.createElement("div");
+  heading.className = "missing-owner-heading";
+  const image = document.createElement("img");
+  image.className = "owner-avatar";
+  image.src = getOwnerAvatarUrl(owner);
+  image.alt = "";
+  const title = document.createElement("h3");
+  title.textContent = owner;
+  heading.append(image, title);
+
+  const characters = getCharactersForOwner(owner);
+  const rows = characters.map((character) => ({ character, missing: getMissingRaidsForCharacter(character) })).filter((row) => row.missing.primary.length || row.missing.extra.length);
+
+  const body = document.createElement("div");
+  body.className = "missing-owner-body";
+
+  if (!characters.length) {
+    const message = document.createElement("p");
+    message.className = "missing-empty";
+    message.textContent = "편성된 캐릭터가 없습니다.";
+    body.append(message);
+  } else if (!rows.length) {
+    const message = document.createElement("p");
+    message.className = "missing-empty is-complete";
+    message.textContent = "필수/추가 레이드가 모두 편성됐습니다.";
+    body.append(message);
+  } else {
+    body.append(...rows.map(createMissingCharacterRow));
+  }
+
+  card.append(heading, body);
+  return card;
+}
+
+function createMissingCharacterRow(data) {
+  const { character, missing } = data;
+  const row = document.createElement("div");
+  row.className = "missing-character-row";
+  row.dataset.tier = getLevelTier(character.itemLevelNumber);
+
+  const main = document.createElement("div");
+  main.className = "missing-character-main";
+  const name = document.createElement("strong");
+  name.textContent = character.characterName;
+  const meta = document.createElement("span");
+  meta.textContent = character.characterClassName + " · " + character.itemAvgLevel;
+  main.append(name, meta);
+
+  row.append(main, createMissingRaidGroup("필수 레이드", missing.primary, "primary"), createMissingRaidGroup("추가 레이드", missing.extra, "extra"));
+  return row;
+}
+
+function createMissingRaidGroup(label, raids, tone) {
+  const group = document.createElement("div");
+  group.className = "missing-raid-group is-" + tone;
+  const title = document.createElement("span");
+  title.className = "missing-raid-label";
+  title.textContent = label;
+  const list = document.createElement("div");
+  list.className = "missing-raid-list";
+
+  if (!raids.length) {
+    const empty = document.createElement("em");
+    empty.textContent = "없음";
+    list.append(empty);
+  } else {
+    list.append(...raids.map((raidName) => {
+      const chip = document.createElement("span");
+      chip.className = "missing-raid-chip";
+      chip.textContent = raidName;
+      chip.dataset.tier = getRaidTier(raidName);
+      return chip;
+    }));
+  }
+
+  group.append(title, list);
+  return group;
+}
+
+function getMissingRaidsForCharacter(character) {
+  const planned = getPlannedRaidsForCharacter(character.key);
+  return {
+    primary: getRecommendedRaids(character).filter((raidName) => !planned.has(raidName)),
+    extra: getExtraRaids(character).filter((raidName) => !planned.has(raidName)),
+  };
+}
+
+function getPlannedRaidsForCharacter(characterKey) {
+  const planned = new Set();
+  for (const plan of getRaidPlanRows(state.raidPlans)) {
+    if (plan.excluded || !plan.raidName) continue;
+    if (Object.values(plan.characters ?? {}).includes(characterKey)) planned.add(plan.raidName);
+  }
+  return planned;
+}
 function renderRaidPlanner() {
   const owners = getOwners();
   renderSavedRaidPlanner(owners);
@@ -492,6 +596,7 @@ function createFilterHeaderContent(label, type, options, selectedValue, owner = 
     state.selectedRaidPlanIds.clear();
     state.editingRaidPlanIds.clear();
     renderRaidPlanner();
+    renderMissingRaidBoard();
   });
 
   const control = document.createElement("label");
@@ -588,6 +693,7 @@ function createSavedRaidPlanRow(plan, owners) {
   dragHandle.addEventListener("dragend", () => {
     state.draggingRaidPlanId = null;
     renderRaidPlanner();
+    renderMissingRaidBoard();
   });
   orderCell.append(dragHandle);
 
@@ -784,6 +890,7 @@ function addRaidPlanRow() {
     characters: Object.fromEntries(owners.map((owner) => [owner, ""])),
   });
   renderRaidPlanner();
+  renderMissingRaidBoard();
 }
 
 async function saveRaidPlanChanges() {
@@ -802,6 +909,7 @@ async function saveRaidPlanChanges() {
   state.editingRaidPlanIds.clear();
   state.raidPlanEditBackup = null;
   renderRaidPlanner();
+  renderMissingRaidBoard();
   setStatus(ok ? "레이드 편성 저장 완료" : "레이드 편성 저장 실패", ok ? "success" : "error");
 }
 
@@ -823,12 +931,17 @@ function validateRaidPlanDrafts() {
 function removeRaidPlanRow(id) {
   state.raidPlanDrafts = state.raidPlanDrafts.filter((plan) => plan.id !== id);
   renderRaidPlanner();
+  renderMissingRaidBoard();
 }
 
 function updateRaidPlan(id, patch, shouldRender = true) {
   state.raidPlanDrafts = getRaidPlanRows(state.raidPlanDrafts).map((plan) => (plan.id === id ? { ...plan, ...patch } : plan));
-  if (shouldRender) renderRaidPlanner();
-  else renderRaidPlanSummary();
+  if (shouldRender) {
+    renderRaidPlanner();
+    renderMissingRaidBoard();
+  } else {
+    renderRaidPlanSummary();
+  }
 }
 
 function updateRaidPlanCharacter(id, owner, key) {
@@ -837,19 +950,25 @@ function updateRaidPlanCharacter(id, owner, key) {
     return { ...plan, characters: { ...(plan.characters ?? {}), [owner]: key } };
   });
   renderRaidPlanner();
+  renderMissingRaidBoard();
 }
 
 async function updateSavedRaidPlan(id, patch) {
   state.raidPlans = getRaidPlanRows(state.raidPlans).map((plan) => (plan.id === id ? { ...plan, ...patch } : plan));
   saveRaidPlans();
   renderRaidPlanner();
+  renderMissingRaidBoard();
   await saveRaidPlansState();
 }
 
 function updateSavedRaidPlanLocal(id, patch, shouldRender = true) {
   state.raidPlans = getRaidPlanRows(state.raidPlans).map((plan) => (plan.id === id ? { ...plan, ...patch } : plan));
-  if (shouldRender) renderRaidPlanner();
-  else renderRaidPlanSummary();
+  if (shouldRender) {
+    renderRaidPlanner();
+    renderMissingRaidBoard();
+  } else {
+    renderRaidPlanSummary();
+  }
 }
 
 function updateSavedRaidPlanCharacterLocal(id, owner, key) {
@@ -858,6 +977,7 @@ function updateSavedRaidPlanCharacterLocal(id, owner, key) {
     return { ...plan, characters: { ...(plan.characters ?? {}), [owner]: key } };
   });
   renderRaidPlanner();
+  renderMissingRaidBoard();
 }
 
 function selectRaidPlanRow(id) {
@@ -869,6 +989,7 @@ function selectRaidPlanRow(id) {
     state.selectedRaidPlanIds.add(id);
   }
   renderRaidPlanner();
+  renderMissingRaidBoard();
 }
 
 function editSelectedRaidPlan() {
@@ -884,6 +1005,7 @@ function editSelectedRaidPlan() {
     selectedIds.forEach((id) => state.editingRaidPlanIds.add(id));
   }
   renderRaidPlanner();
+  renderMissingRaidBoard();
 }
 
 function cancelRaidEdits() {
@@ -893,12 +1015,14 @@ function cancelRaidEdits() {
   state.raidPlanEditBackup = null;
   state.raidPlanFilter = null;
   renderRaidPlanner();
+  renderMissingRaidBoard();
 }
 
 function cancelRaidDrafts() {
   state.raidPlanDrafts = [];
   state.raidPlanFilter = null;
   renderRaidPlanner();
+  renderMissingRaidBoard();
 }
 
 async function deleteSelectedRaidPlan() {
@@ -915,6 +1039,7 @@ async function deleteSelectedRaidPlan() {
   const ok = await saveRaidPlansState();
   hideSavingOverlay();
   renderRaidPlanner();
+  renderMissingRaidBoard();
   setStatus(ok ? "레이드 편성 삭제 완료" : "레이드 편성 삭제 실패", ok ? "success" : "error");
 }
 
@@ -931,6 +1056,7 @@ function reorderSavedRaidPlan(sourceId, targetId) {
   saveRaidPlans();
   saveSheetState();
   renderRaidPlanner();
+  renderMissingRaidBoard();
 }
 
 function pruneRaidPlanSelection() {
@@ -945,6 +1071,7 @@ async function resetRaidCompleted() {
   saveRaidPlans();
   const ok = await saveRaidPlansState();
   renderRaidPlanner();
+  renderMissingRaidBoard();
   setStatus(ok ? "레이드 체크 초기화 완료" : "레이드 체크 초기화 실패", ok ? "success" : "error");
 }
 
