@@ -73,7 +73,7 @@ const state = {
   editingRaidPlanIds: new Set(),
   raidPlanEditBackup: null,
   draggingRaidPlanId: null,
-  raidPlanFilter: null,
+  raidPlanFilters: createEmptyRaidPlanFilters(),
   isLoading: false,
   isRemoteReady: false,
   lastUpdatedAt: null,
@@ -125,8 +125,8 @@ elements.openRosterButton.addEventListener("click", openRosterDialog);
 elements.addAccountButton.addEventListener("click", addAccountEditorRow);
 elements.saveAccountsButton.addEventListener("click", saveAccountEditor);
 elements.addRaidRowButton.addEventListener("click", addRaidPlanRow);
-elements.saveRaidPlanButton.addEventListener("click", saveRaidPlanChanges);
-elements.saveRaidPlanBottomButton.addEventListener("click", saveRaidPlanChanges);
+elements.saveRaidPlanButton.addEventListener("click", saveSavedRaidPlanChanges);
+elements.saveRaidPlanBottomButton.addEventListener("click", saveRaidDraftChanges);
 elements.editRaidRowButton.addEventListener("click", editSelectedRaidPlan);
 elements.deleteRaidRowButton.addEventListener("click", deleteSelectedRaidPlan);
 elements.cancelRaidEditButton.addEventListener("click", cancelRaidEdits);
@@ -474,8 +474,7 @@ function renderSavedRaidPlanner(owners) {
   if (!rows.length) {
     const message = document.createElement("p");
     message.className = "column-message raid-saved-empty";
-    message.textContent =
-      "아래에서 레이드를 추가하고 저장하면 편성표가 표시됩니다.";
+    message.textContent = state.raidPlans.length ? "필터 조건에 맞는 레이드가 없습니다." : "아래에서 레이드를 추가하고 저장하면 편성표가 표시됩니다.";
     elements.raidSavedBoard.replaceChildren(message);
     return;
   }
@@ -499,7 +498,7 @@ function renderSavedRaidPlanner(owners) {
   const thead = document.createElement("thead");
   const headRow = document.createElement("tr");
 
-  headRow.append(createTableHeader("순서"), createTableHeader("완료"), createRaidHeaderCell());
+  headRow.append(createTableHeader("순서"), createCompletedHeaderCell(), createRaidHeaderCell());
 
   owners.forEach((owner) => {
     headRow.append(createOwnerRaidHeaderCell(owner));
@@ -560,13 +559,13 @@ function createTableHeader(label) {
 
 function createRaidHeaderCell() {
   const cell = createTableHeader("");
-  cell.append(createFilterHeaderContent("레이드", "raid", getRaidFilterOptions(), state.raidPlanFilter?.type === "raid" ? state.raidPlanFilter.value : ""));
+  cell.append(createFilterHeaderContent("레이드", "raid", getRaidFilterOptions(), state.raidPlanFilters.raid));
   return cell;
 }
 
 function createOwnerRaidHeaderCell(owner) {
   const cell = createTableHeader("");
-  cell.append(createFilterHeaderContent(owner, "character", getCharacterFilterOptions(owner), state.raidPlanFilter?.type === "character" && state.raidPlanFilter.owner === owner ? state.raidPlanFilter.value : "", owner));
+  cell.append(createFilterHeaderContent(getRaidTableDisplayName(owner), "character", getOwnerFilterOptions(owner), getOwnerFilterValue(owner), owner));
   return cell;
 }
 
@@ -577,7 +576,7 @@ function createFilterHeaderContent(label, type, options, selectedValue, owner = 
   if (type === "character") {
     const image = document.createElement("img");
     image.className = "owner-avatar";
-    image.src = getOwnerAvatarUrl(label);
+    image.src = getOwnerAvatarUrl(owner);
     image.alt = "";
     wrap.append(image);
   }
@@ -594,7 +593,7 @@ function createFilterHeaderContent(label, type, options, selectedValue, owner = 
   select.value = selectedValue;
   select.addEventListener("click", (event) => event.stopPropagation());
   select.addEventListener("change", () => {
-    state.raidPlanFilter = select.value ? { type, owner, value: select.value } : null;
+    updateRaidPlanFilter(type, select.value, owner);
     state.selectedRaidPlanIds.clear();
     state.editingRaidPlanIds.clear();
     renderRaidPlanner();
@@ -609,6 +608,12 @@ function createFilterHeaderContent(label, type, options, selectedValue, owner = 
   control.append(icon, select);
   wrap.append(control);
   return wrap;
+}
+
+function createCompletedHeaderCell() {
+  const cell = createTableHeader("");
+  cell.append(createFilterHeaderContent("완료", "status", getStatusFilterOptions(), state.raidPlanFilters.status));
+  return cell;
 }
 
 function createRaidPlanRow(plan, owners) {
@@ -706,13 +711,13 @@ function createSavedRaidPlanRow(plan, owners) {
   completed.checked = Boolean(plan.completed);
   completed.setAttribute("aria-label", `${plan.raidName || "레이드"} 완료`);
   completed.addEventListener("click", (event) => event.stopPropagation());
-  completed.addEventListener("change", () => updateSavedRaidPlan(plan.id, { completed: completed.checked }));
+  completed.addEventListener("change", () => updateSavedRaidPlanLocal(plan.id, { completed: completed.checked }));
   completedCell.append(completed);
   completedCell.addEventListener("click", (event) => {
     event.stopPropagation();
     if (event.target === completed) return;
     completed.checked = !completed.checked;
-    updateSavedRaidPlan(plan.id, { completed: completed.checked });
+    updateSavedRaidPlanLocal(plan.id, { completed: completed.checked });
   });
 
   const raidCell = document.createElement("td");
@@ -895,39 +900,56 @@ function addRaidPlanRow() {
   renderMissingRaidBoard();
 }
 
-async function saveRaidPlanChanges() {
+
+async function saveSavedRaidPlanChanges() {
+  if (!validateRaidPlans(state.raidPlans)) return;
+  saveRaidPlans();
+  elements.saveRaidPlanButton.disabled = true;
+  showSavingOverlay("편성 저장중...");
+  const ok = await saveRaidPlansState();
+  elements.saveRaidPlanButton.disabled = false;
+  hideSavingOverlay();
+  if (ok) {
+    state.selectedRaidPlanIds.clear();
+    state.editingRaidPlanIds.clear();
+    state.raidPlanEditBackup = null;
+  }
+  renderRaidPlanner();
+  renderMissingRaidBoard();
+  setStatus(ok ? "레이드 편성 수정 저장 완료" : "레이드 편성 수정 저장 실패", ok ? "success" : "error");
+}
+async function saveRaidDraftChanges() {
   if (!validateRaidPlanDrafts()) return;
   state.raidPlans = mergeRaidPlans(state.raidPlans, state.raidPlanDrafts);
   saveRaidPlans();
-  elements.saveRaidPlanButton.disabled = true;
   elements.saveRaidPlanBottomButton.disabled = true;
-  showSavingOverlay("저장중...");
+  showSavingOverlay("추가 저장중...");
   const ok = await saveRaidPlansState();
-  elements.saveRaidPlanButton.disabled = false;
   elements.saveRaidPlanBottomButton.disabled = false;
   hideSavingOverlay();
   if (ok) state.raidPlanDrafts = [];
-  state.selectedRaidPlanIds.clear();
-  state.editingRaidPlanIds.clear();
-  state.raidPlanEditBackup = null;
   renderRaidPlanner();
   renderMissingRaidBoard();
-  setStatus(ok ? "레이드 편성 저장 완료" : "레이드 편성 저장 실패", ok ? "success" : "error");
+  setStatus(ok ? "레이드 추가 저장 완료" : "레이드 추가 저장 실패", ok ? "success" : "error");
 }
 
-function validateRaidPlanDrafts() {
-  const invalid = [...getRaidPlanRows(state.raidPlanDrafts), ...getRaidPlanRows(state.raidPlans)].some((plan) => {
+function validateRaidPlans(raidPlans) {
+  const invalid = getRaidPlanRows(raidPlans).some((plan) => {
     const hasRaidName = Boolean(plan.raidName?.trim());
     const hasCharacter = Object.values(plan.characters ?? {}).some(Boolean);
     return hasRaidName && !hasCharacter;
   });
 
   if (invalid) {
-    alert("[\uCE90\uB9AD\uD130\uAC00 \uC9C0\uC815\uB418\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4]");
+    alert("[캐릭터가 지정되지 않았습니다]");
     return false;
   }
 
   return true;
+}
+
+function validateRaidPlanDrafts() {
+  return validateRaidPlans(state.raidPlanDrafts);
 }
 
 function removeRaidPlanRow(id) {
@@ -964,6 +986,7 @@ async function updateSavedRaidPlan(id, patch) {
 }
 
 function updateSavedRaidPlanLocal(id, patch, shouldRender = true) {
+  ensureRaidPlanEditBackup();
   state.raidPlans = getRaidPlanRows(state.raidPlans).map((plan) => (plan.id === id ? { ...plan, ...patch } : plan));
   if (shouldRender) {
     renderRaidPlanner();
@@ -974,6 +997,7 @@ function updateSavedRaidPlanLocal(id, patch, shouldRender = true) {
 }
 
 function updateSavedRaidPlanCharacterLocal(id, owner, key) {
+  ensureRaidPlanEditBackup();
   state.raidPlans = getRaidPlanRows(state.raidPlans).map((plan) => {
     if (plan.id !== id) return plan;
     return { ...plan, characters: { ...(plan.characters ?? {}), [owner]: key } };
@@ -994,6 +1018,9 @@ function selectRaidPlanRow(id) {
   renderMissingRaidBoard();
 }
 
+function ensureRaidPlanEditBackup() {
+  if (!state.raidPlanEditBackup) state.raidPlanEditBackup = cloneRaidPlans(state.raidPlans);
+}
 function editSelectedRaidPlan() {
   pruneRaidPlanSelection();
   const selectedIds = [...state.selectedRaidPlanIds];
@@ -1015,50 +1042,45 @@ function cancelRaidEdits() {
   state.selectedRaidPlanIds.clear();
   state.editingRaidPlanIds.clear();
   state.raidPlanEditBackup = null;
-  state.raidPlanFilter = null;
+  state.raidPlanFilters = createEmptyRaidPlanFilters();
   renderRaidPlanner();
   renderMissingRaidBoard();
 }
 
 function cancelRaidDrafts() {
   state.raidPlanDrafts = [];
-  state.raidPlanFilter = null;
+  state.raidPlanFilters = createEmptyRaidPlanFilters();
   renderRaidPlanner();
   renderMissingRaidBoard();
 }
 
-async function deleteSelectedRaidPlan() {
+function deleteSelectedRaidPlan() {
   pruneRaidPlanSelection();
   if (!state.selectedRaidPlanIds.size) return;
+  ensureRaidPlanEditBackup();
   const selectedIds = new Set(state.selectedRaidPlanIds);
   state.raidPlans = state.raidPlans.filter((plan) => !selectedIds.has(plan.id));
   state.raidPlanDrafts = state.raidPlanDrafts.filter((plan) => !selectedIds.has(plan.id));
   state.selectedRaidPlanIds.clear();
   state.editingRaidPlanIds.clear();
-  state.raidPlanEditBackup = null;
-  saveRaidPlans();
-  showSavingOverlay("저장중...");
-  const ok = await saveRaidPlansState();
-  hideSavingOverlay();
   renderRaidPlanner();
   renderMissingRaidBoard();
-  setStatus(ok ? "레이드 편성 삭제 완료" : "레이드 편성 삭제 실패", ok ? "success" : "error");
+  setStatus("삭제할 편성은 편성 저장을 누르면 반영됩니다.", "neutral");
 }
 
 function reorderSavedRaidPlan(sourceId, targetId) {
   if (!sourceId || !targetId || sourceId === targetId) return;
+  ensureRaidPlanEditBackup();
   const rows = [...state.raidPlans];
   const sourceIndex = rows.findIndex((plan) => plan.id === sourceId);
   const targetIndex = rows.findIndex((plan) => plan.id === targetId);
   if (sourceIndex < 0 || targetIndex < 0) return;
-  const [moved] = rows.splice(sourceIndex, 1);
-  rows.splice(targetIndex, 0, moved);
+  const [item] = rows.splice(sourceIndex, 1);
+  rows.splice(targetIndex, 0, item);
   state.raidPlans = rows;
-  state.draggingRaidPlanId = null;
-  saveRaidPlans();
-  saveSheetState();
   renderRaidPlanner();
   renderMissingRaidBoard();
+  setStatus("순서 변경은 편성 저장을 누르면 반영됩니다.", "neutral");
 }
 
 function pruneRaidPlanSelection() {
@@ -1067,14 +1089,13 @@ function pruneRaidPlanSelection() {
   state.editingRaidPlanIds = new Set([...state.editingRaidPlanIds].filter((id) => savedIds.has(id) && state.selectedRaidPlanIds.has(id)));
 }
 
-async function resetRaidCompleted() {
+function resetRaidCompleted() {
+  ensureRaidPlanEditBackup();
   state.raidPlans = state.raidPlans.map((plan) => ({ ...plan, completed: false }));
   state.raidPlanDrafts = state.raidPlanDrafts.map((plan) => ({ ...plan, completed: false }));
-  saveRaidPlans();
-  const ok = await saveRaidPlansState();
   renderRaidPlanner();
   renderMissingRaidBoard();
-  setStatus(ok ? "레이드 체크 초기화 완료" : "레이드 체크 초기화 실패", ok ? "success" : "error");
+  setStatus("체크 초기화는 편성 저장을 누르면 반영됩니다.", "neutral");
 }
 
 function createLoadingSourceColumn(group) {
@@ -1331,15 +1352,65 @@ function getRaidPlanRows(raidPlans = state.raidPlanDrafts) {
   }));
 }
 
+function createEmptyRaidPlanFilters() {
+  return { raid: "", status: "", owners: {} };
+}
+
 function getFilteredRaidPlanRows(rows) {
-  if (!state.raidPlanFilter) return rows;
-  if (state.raidPlanFilter.type === "raid") {
-    return rows.filter((plan) => plan.raidName === state.raidPlanFilter.value);
+  const filters = state.raidPlanFilters ?? createEmptyRaidPlanFilters();
+  return rows.filter((plan) => {
+    if (filters.raid && plan.raidName !== filters.raid) return false;
+    if (filters.status === "completed" && !plan.completed) return false;
+    if (filters.status === "pending" && plan.completed) return false;
+
+    for (const [owner, filter] of Object.entries(filters.owners ?? {})) {
+      if (!filter?.mode) continue;
+      const characterKey = plan.characters?.[owner] ?? "";
+      if (filter.mode === "exclude-owner" && characterKey) return false;
+      if (filter.mode === "character" && characterKey !== filter.value) return false;
+    }
+
+    return true;
+  });
+}
+
+function updateRaidPlanFilter(type, value, owner = "") {
+  const next = {
+    raid: state.raidPlanFilters?.raid ?? "",
+    status: state.raidPlanFilters?.status ?? "",
+    owners: { ...(state.raidPlanFilters?.owners ?? {}) },
+  };
+
+  if (type === "raid") next.raid = value;
+  if (type === "status") next.status = value;
+  if (type === "character") {
+    if (!value) delete next.owners[owner];
+    else if (value === "__exclude_owner__") next.owners[owner] = { mode: "exclude-owner" };
+    else next.owners[owner] = { mode: "character", value };
   }
-  if (state.raidPlanFilter.type === "character") {
-    return rows.filter((plan) => Object.values(plan.characters ?? {}).includes(state.raidPlanFilter.value));
-  }
-  return rows;
+
+  state.raidPlanFilters = next;
+}
+
+function getStatusFilterOptions() {
+  return [
+    { label: "완료", value: "completed" },
+    { label: "미완료", value: "pending" },
+  ];
+}
+
+function getOwnerFilterValue(owner) {
+  const filter = state.raidPlanFilters?.owners?.[owner];
+  if (!filter) return "";
+  if (filter.mode === "exclude-owner") return "__exclude_owner__";
+  return filter.value ?? "";
+}
+
+function getOwnerFilterOptions(owner) {
+  return [
+    { label: `${getRaidTableDisplayName(owner)} 제외`, value: "__exclude_owner__" },
+    ...getCharacterFilterOptions(owner),
+  ];
 }
 
 function getRaidFilterOptions() {
@@ -1370,9 +1441,19 @@ function getCharacterFilterOptions(owner) {
       return true;
     })
     .sort(compareCharacters)
-    .map((character) => ({ label: character.characterName, value: character.key }));
+    .map((character) => ({ label: getRaidTableDisplayName(character.characterName), value: character.key }));
 }
 
+
+function getRaidTableDisplayName(name) {
+  const names = {
+    "바들바글바들": "바들",
+    "자네내가서폿이될상인가": "바홀라",
+    "나는바드좋아": "난바좋",
+    "겨라니와써요": "겨라니",
+  };
+  return names[name] ?? name;
+}
 function getOwners() {
   return [...new Set(state.accounts.map((account) => account.owner).filter(Boolean))];
 }
