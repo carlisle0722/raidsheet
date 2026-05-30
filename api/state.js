@@ -21,7 +21,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  if (method !== "GET" && method !== "PUT") {
+  if (method !== "GET" && method !== "PUT" && method !== "PATCH") {
     sendJson(res, 405, {
       error: "지원하지 않는 요청입니다.",
     });
@@ -47,6 +47,27 @@ export default async function handler(req, res) {
     }
 
     const body = await readJsonBody(req);
+
+    if (method === "PATCH") {
+      if (Array.isArray(body?.raidPlans)) {
+        await sql`
+          INSERT INTO raid_sheet_state (sheet_id, accounts, assignments, raid_plans, updated_at)
+          VALUES (${sheetId}, '[]'::jsonb, '[]'::jsonb, ${JSON.stringify(body.raidPlans)}::jsonb, NOW())
+          ON CONFLICT (sheet_id)
+          DO UPDATE SET
+            raid_plans = EXCLUDED.raid_plans,
+            updated_at = NOW()
+        `;
+        sendJson(res, 200, { ok: true });
+        return;
+      }
+
+      sendJson(res, 400, {
+        error: "수정할 레이드 편성 데이터가 없습니다.",
+      });
+      return;
+    }
+
     const accounts = Array.isArray(body?.accounts) ? body.accounts : [];
     const assignments = Array.isArray(body?.assignments) ? body.assignments : [];
     const raidPlans = Array.isArray(body?.raidPlans) ? body.raidPlans : [];

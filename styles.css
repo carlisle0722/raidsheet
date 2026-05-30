@@ -7,6 +7,8 @@
   --muted: #677084;
   --line: #d9dee8;
   --line-strong: #b9c1d0;
+  --table-head: #eef3f6;
+  --chip-bg: #f7f9fb;
   --accent: #2f6f6a;
   --accent-strong: #1f5652;
   --danger: #b43b45;
@@ -620,10 +622,11 @@ h3:has(.owner-avatar) {
 .raid-saved-board {
   display: block;
   overflow-x: auto;
-  padding: 8px;
+  padding: 10px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: linear-gradient(180deg, #fff, var(--surface-soft));
+  background: var(--surface);
+  box-shadow: 0 12px 30px rgba(24, 31, 42, 0.055);
   margin-bottom: 14px;
 }
 
@@ -653,7 +656,7 @@ h3:has(.owner-avatar) {
 .raid-saved-table,
 .raid-planner-table {
   table-layout: fixed;
-  border-spacing: 0 6px;
+  border-spacing: 0 5px;
   border-collapse: separate;
   width: 100%;
   min-width: 920px;
@@ -687,12 +690,22 @@ h3:has(.owner-avatar) {
 
 .raid-saved-table th,
 .raid-planner-table th {
-  height: 38px;
+  height: 44px;
   color: var(--ink);
-  background: transparent;
-  font-size: 0.84rem;
-  font-weight: 700;
+  background: var(--table-head);
+  font-size: 0.92rem;
+  font-weight: 750;
   text-align: center;
+}
+
+.raid-saved-table thead th:first-child,
+.raid-planner-table thead th:first-child {
+  border-radius: 8px 0 0 8px;
+}
+
+.raid-saved-table thead th:last-child,
+.raid-planner-table thead th:last-child {
+  border-radius: 0 8px 8px 0;
 }
 
 .raid-saved-table th:first-child,
@@ -725,7 +738,19 @@ h3:has(.owner-avatar) {
 .raid-saved-table tbody tr td,
 .raid-planner-table tbody tr td {
   background: var(--surface);
-  box-shadow: 0 1px 0 rgba(24, 31, 42, 0.035);
+  border-top: 1px solid rgba(217, 222, 232, 0.72);
+  border-bottom: 1px solid rgba(217, 222, 232, 0.72);
+  box-shadow: none;
+}
+
+.raid-saved-table tbody tr td:first-child,
+.raid-planner-table tbody tr td:first-child {
+  border-left: 1px solid rgba(217, 222, 232, 0.72);
+}
+
+.raid-saved-table tbody tr td:last-child,
+.raid-planner-table tbody tr td:last-child {
+  border-right: 1px solid rgba(217, 222, 232, 0.72);
 }
 
 .raid-saved-table tbody tr td:first-child,
@@ -759,7 +784,7 @@ h3:has(.owner-avatar) {
 
 .raid-saved-table tbody tr.is-completed td,
 .raid-planner-table tbody tr.is-completed td {
-  background-color: rgba(169, 201, 236, 0.18);
+  background-color: rgba(169, 201, 236, 0.16);
 }
 
 .raid-name-cell {
@@ -827,7 +852,7 @@ h3:has(.owner-avatar) {
   border: 1px solid var(--line);
   border-radius: 6px;
   color: var(--ink);
-  background: var(--surface);
+  background: #fff;
   font-size: 0.86rem;
   font-weight: 600;
 }
@@ -844,9 +869,10 @@ h3:has(.owner-avatar) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 7px;
   width: 100%;
   min-width: 0;
+  font-size: 0.95rem;
 }
 
 .raid-filter-heading > span {
@@ -856,21 +882,49 @@ h3:has(.owner-avatar) {
 }
 
 .raid-filter-heading .owner-avatar {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   border-width: 1px;
 }
 
-.raid-filter-select {
+.raid-filter-control {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
   width: 28px;
-  min-width: 28px;
   height: 28px;
+}
+
+.raid-filter-icon {
+  position: relative;
+  display: block;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: #fff;
+}
+
+.raid-filter-icon::before {
+  position: absolute;
+  top: 4px;
+  left: 5px;
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg);
+  content: "";
+}
+
+.raid-filter-select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   border: 1px solid var(--line);
   border-radius: 6px;
-  color: transparent;
-  background:
-    linear-gradient(45deg, transparent 45%, var(--muted) 45% 55%, transparent 55%) center / 10px 10px no-repeat,
-    var(--surface);
+  opacity: 0;
   font-size: 0.8rem;
   cursor: pointer;
 }
@@ -955,9 +1009,10 @@ h3:has(.owner-avatar) {
   min-height: 30px;
   margin-top: 0;
   padding: 2px 8px;
-  border-inline: 5px solid var(--tier-base);
+  border: 1px solid #e4e8ef;
+  border-inline: 4px solid #d8dee8;
   border-radius: 6px;
-  background: rgba(25, 29, 36, 0.015);
+  background: var(--chip-bg);
   color: var(--ink);
   font-size: 0.96rem;
   font-weight: 600;
@@ -978,41 +1033,11 @@ h3:has(.owner-avatar) {
   color: var(--option-extra);
 }
 
-.raid-saved-table td[data-tier="ancient"] .raid-character-chip {
-  border-inline-color: var(--tier-red);
-  background: rgba(231, 163, 163, 0.045);
-}
-
-.raid-saved-table td[data-tier="red"] .raid-character-chip {
-  border-inline-color: var(--tier-gold);
-  background: rgba(240, 206, 134, 0.05);
-}
-
-.raid-saved-table td[data-tier="green"] .raid-character-chip {
-  border-inline-color: var(--tier-green);
-  background: rgba(169, 216, 189, 0.05);
-}
-
-.raid-saved-table td[data-tier="blue"] .raid-character-chip {
-  border-inline-color: var(--tier-blue);
-  background: rgba(169, 201, 236, 0.05);
-}
-
-.raid-saved-table td[data-tier="low"] .raid-character-chip {
-  border-inline-color: var(--tier-low);
-  background: rgba(207, 212, 220, 0.06);
-}
-
-.raid-saved-table td[data-tier="base"] .raid-character-chip {
-  border-inline-color: var(--tier-base);
-  background: rgba(199, 183, 242, 0.05);
-}
-
 .raid-saved-table td.is-extra-raid,
 .raid-planner-table td.is-extra-raid .raid-character-select {
-  border-color: rgba(25, 29, 36, 0.42);
+  border-color: rgba(37, 99, 235, 0.36);
   color: var(--ink);
-  background: rgba(25, 29, 36, 0.08);
+  background: rgba(37, 99, 235, 0.055);
   font-weight: 650;
 }
 
@@ -1084,6 +1109,32 @@ h3:has(.owner-avatar) {
 
 .raid-drag-handle:active {
   cursor: grabbing;
+}
+
+.saving-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: rgba(245, 246, 248, 0.46);
+  backdrop-filter: blur(2px);
+}
+
+.saving-overlay[hidden] {
+  display: none;
+}
+
+.saving-panel {
+  min-width: 148px;
+  padding: 14px 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--accent-strong);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  font-weight: 800;
+  text-align: center;
 }
 
 .raid-row-actions .icon-button {

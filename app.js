@@ -79,6 +79,7 @@ const elements = {
   addAccountButton: document.querySelector("#add-account-button"),
   saveAccountsButton: document.querySelector("#save-accounts-button"),
   status: document.querySelector("#status"),
+  savingOverlay: document.querySelector("#saving-overlay"),
   profileBoard: document.querySelector("#profile-board"),
   assignmentBoard: document.querySelector("#assignment-board"),
   rosterBoard: document.querySelector("#roster-board"),
@@ -481,7 +482,14 @@ function createFilterHeaderContent(label, type, options, selectedValue, owner = 
     state.editingRaidPlanIds.clear();
     renderRaidPlanner();
   });
-  wrap.append(select);
+
+  const control = document.createElement("label");
+  control.className = "raid-filter-control";
+  const icon = document.createElement("span");
+  icon.className = "raid-filter-icon";
+  icon.setAttribute("aria-hidden", "true");
+  control.append(icon, select);
+  wrap.append(control);
   return wrap;
 }
 
@@ -773,9 +781,11 @@ async function saveRaidPlanChanges() {
   saveRaidPlans();
   elements.saveRaidPlanButton.disabled = true;
   elements.saveRaidPlanBottomButton.disabled = true;
-  const ok = await saveSheetState();
+  showSavingOverlay("저장중...");
+  const ok = await saveRaidPlansState();
   elements.saveRaidPlanButton.disabled = false;
   elements.saveRaidPlanBottomButton.disabled = false;
+  hideSavingOverlay();
   if (ok) state.raidPlanDrafts = [];
   state.selectedRaidPlanIds.clear();
   state.editingRaidPlanIds.clear();
@@ -822,7 +832,7 @@ async function updateSavedRaidPlan(id, patch) {
   state.raidPlans = getRaidPlanRows(state.raidPlans).map((plan) => (plan.id === id ? { ...plan, ...patch } : plan));
   saveRaidPlans();
   renderRaidPlanner();
-  await saveSheetState();
+  await saveRaidPlansState();
 }
 
 function updateSavedRaidPlanLocal(id, patch, shouldRender = true) {
@@ -890,7 +900,9 @@ async function deleteSelectedRaidPlan() {
   state.editingRaidPlanIds.clear();
   state.raidPlanEditBackup = null;
   saveRaidPlans();
-  const ok = await saveSheetState();
+  showSavingOverlay("저장중...");
+  const ok = await saveRaidPlansState();
+  hideSavingOverlay();
   renderRaidPlanner();
   setStatus(ok ? "레이드 편성 삭제 완료" : "레이드 편성 삭제 실패", ok ? "success" : "error");
 }
@@ -920,7 +932,7 @@ async function resetRaidCompleted() {
   state.raidPlans = state.raidPlans.map((plan) => ({ ...plan, completed: false }));
   state.raidPlanDrafts = state.raidPlanDrafts.map((plan) => ({ ...plan, completed: false }));
   saveRaidPlans();
-  const ok = await saveSheetState();
+  const ok = await saveRaidPlansState();
   renderRaidPlanner();
   setStatus(ok ? "레이드 체크 초기화 완료" : "레이드 체크 초기화 실패", ok ? "success" : "error");
 }
@@ -1396,6 +1408,30 @@ async function saveSheetState() {
     state.isRemoteReady = false;
     return false;
   }
+}
+
+async function saveRaidPlansState() {
+  try {
+    const response = await fetch("/api/state", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ raidPlans: state.raidPlans }),
+    });
+    state.isRemoteReady = response.ok;
+    return response.ok;
+  } catch {
+    state.isRemoteReady = false;
+    return false;
+  }
+}
+
+function showSavingOverlay(message = "저장중...") {
+  elements.savingOverlay.querySelector(".saving-panel").textContent = message;
+  elements.savingOverlay.hidden = false;
+}
+
+function hideSavingOverlay() {
+  elements.savingOverlay.hidden = true;
 }
 
 function readJson(key, fallback) {

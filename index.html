@@ -71,7 +71,7 @@
                 <div class="section-actions">
                   <button id="edit-raid-row-button" class="secondary-button" type="button" disabled>수정</button>
                   <button id="delete-raid-row-button" class="secondary-button danger" type="button" disabled>삭제</button>
-                  <button id="cancel-raid-edit-button" class="secondary-button" type="button">편성 취소</button>
+                  <button id="cancel-raid-edit-button" class="secondary-button" type="button">취소</button>
                   <button id="save-raid-plan-button" class="primary-button" type="button">저장</button>
                 </div>
               </div>
@@ -112,6 +112,10 @@
         </div>
       </section>
     </main>
+
+    <div id="saving-overlay" class="saving-overlay" role="status" aria-live="polite" hidden>
+      <div class="saving-panel">저장중...</div>
+    </div>
 
     <dialog id="accounts-dialog" class="accounts-dialog">
       <form method="dialog" class="dialog-panel">
