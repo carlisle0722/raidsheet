@@ -62,6 +62,7 @@ const state = {
   editingRaidPlanIds: new Set(),
   raidPlanEditBackup: null,
   draggingRaidPlanId: null,
+  raidPlanFilter: null,
   isLoading: false,
   isRemoteReady: false,
   lastUpdatedAt: null,
@@ -88,6 +89,7 @@ const elements = {
   editRaidRowButton: document.querySelector("#edit-raid-row-button"),
   deleteRaidRowButton: document.querySelector("#delete-raid-row-button"),
   cancelRaidEditButton: document.querySelector("#cancel-raid-edit-button"),
+  cancelRaidDraftButton: document.querySelector("#cancel-raid-draft-button"),
   resetRaidCompleteButton: document.querySelector("#reset-raid-complete-button"),
   raidSavedBoard: document.querySelector("#raid-saved-board"),
   raidPlanHead: document.querySelector("#raid-plan-head"),
@@ -115,6 +117,7 @@ elements.saveRaidPlanBottomButton.addEventListener("click", saveRaidPlanChanges)
 elements.editRaidRowButton.addEventListener("click", editSelectedRaidPlan);
 elements.deleteRaidRowButton.addEventListener("click", deleteSelectedRaidPlan);
 elements.cancelRaidEditButton.addEventListener("click", cancelRaidEdits);
+elements.cancelRaidDraftButton.addEventListener("click", cancelRaidDrafts);
 elements.resetRaidCompleteButton.addEventListener("click", resetRaidCompleted);
 for (const button of elements.tabButtons) {
   button.addEventListener("click", () => activateTab(button.dataset.tabTarget));
@@ -348,7 +351,7 @@ function renderRaidPlanner() {
 }
 
 function renderSavedRaidPlanner(owners) {
-  const rows = getRaidPlanRows(state.raidPlans);
+  const rows = getFilteredRaidPlanRows(getRaidPlanRows(state.raidPlans));
 
   if (!rows.length) {
     const message = document.createElement("p");
@@ -378,10 +381,10 @@ function renderSavedRaidPlanner(owners) {
   const thead = document.createElement("thead");
   const headRow = document.createElement("tr");
 
-  headRow.append(createTableHeader("순서"), createTableHeader("완료"), createTableHeader("레이드"));
+  headRow.append(createTableHeader("순서"), createTableHeader("완료"), createRaidHeaderCell());
 
   owners.forEach((owner) => {
-    headRow.append(createTableHeader(owner));
+    headRow.append(createOwnerRaidHeaderCell(owner));
   });
 
   thead.append(headRow);
@@ -437,6 +440,51 @@ function createTableHeader(label) {
   return cell;
 }
 
+function createRaidHeaderCell() {
+  const cell = createTableHeader("");
+  cell.append(createFilterHeaderContent("레이드", "raid", getRaidFilterOptions(), state.raidPlanFilter?.type === "raid" ? state.raidPlanFilter.value : ""));
+  return cell;
+}
+
+function createOwnerRaidHeaderCell(owner) {
+  const cell = createTableHeader("");
+  cell.append(createFilterHeaderContent(owner, "character", getCharacterFilterOptions(owner), state.raidPlanFilter?.type === "character" && state.raidPlanFilter.owner === owner ? state.raidPlanFilter.value : "", owner));
+  return cell;
+}
+
+function createFilterHeaderContent(label, type, options, selectedValue, owner = "") {
+  const wrap = document.createElement("div");
+  wrap.className = type === "character" ? "raid-filter-heading owner-filter-heading" : "raid-filter-heading";
+
+  if (type === "character") {
+    const image = document.createElement("img");
+    image.className = "owner-avatar";
+    image.src = getOwnerAvatarUrl(label);
+    image.alt = "";
+    wrap.append(image);
+  }
+
+  const text = document.createElement("span");
+  text.textContent = label;
+  wrap.append(text);
+
+  const select = document.createElement("select");
+  select.className = "raid-filter-select";
+  select.setAttribute("aria-label", `${label} 필터`);
+  select.add(new Option("전체", ""));
+  options.forEach((option) => select.add(new Option(option.label, option.value, option.value === selectedValue, option.value === selectedValue)));
+  select.value = selectedValue;
+  select.addEventListener("click", (event) => event.stopPropagation());
+  select.addEventListener("change", () => {
+    state.raidPlanFilter = select.value ? { type, owner, value: select.value } : null;
+    state.selectedRaidPlanIds.clear();
+    state.editingRaidPlanIds.clear();
+    renderRaidPlanner();
+  });
+  wrap.append(select);
+  return wrap;
+}
+
 function createRaidPlanRow(plan, owners) {
   const row = document.createElement("tr");
   row.dataset.raidPlanId = plan.id;
@@ -487,7 +535,7 @@ function createSavedRaidPlanRow(plan, owners) {
   row.classList.toggle("is-completed", Boolean(plan.completed));
   row.classList.toggle("is-editing", state.editingRaidPlanIds.has(plan.id));
   row.addEventListener("click", (event) => {
-    if (event.target.closest("button, input, select, label")) return;
+    if (event.target.closest("button, input, select, label, .raid-order-cell, .raid-completed-cell")) return;
     selectRaidPlanRow(plan.id);
   });
   row.addEventListener("dragover", (event) => {
@@ -504,6 +552,7 @@ function createSavedRaidPlanRow(plan, owners) {
 
   const orderCell = document.createElement("td");
   orderCell.className = "raid-order-cell";
+  orderCell.addEventListener("click", (event) => event.stopPropagation());
   const dragHandle = document.createElement("button");
   dragHandle.type = "button";
   dragHandle.className = "raid-drag-handle";
@@ -532,6 +581,12 @@ function createSavedRaidPlanRow(plan, owners) {
   completed.addEventListener("click", (event) => event.stopPropagation());
   completed.addEventListener("change", () => updateSavedRaidPlan(plan.id, { completed: completed.checked }));
   completedCell.append(completed);
+  completedCell.addEventListener("click", (event) => {
+    event.stopPropagation();
+    if (event.target === completed) return;
+    completed.checked = !completed.checked;
+    updateSavedRaidPlan(plan.id, { completed: completed.checked });
+  });
 
   const raidCell = document.createElement("td");
   raidCell.className = "raid-name-cell";
@@ -565,10 +620,10 @@ function createSavedRaidOwnerTableCell(plan, owner) {
 
   const status = getRaidPlanCellStatus(plan, character, state.raidPlans);
   cell.dataset.tier = getLevelTier(character.itemLevelNumber);
-  cell.classList.toggle("is-extra-raid", status.isExtra);
-  cell.classList.toggle("is-excluded-raid", status.isExcluded);
-  cell.classList.toggle("is-duplicate-raid", status.isDuplicate);
-  cell.title = `${owner} · ${character.characterName} · ${character.itemAvgLevel}`;
+    cell.classList.toggle("is-extra-raid", status.isExtra);
+    cell.classList.toggle("is-excluded-raid", status.isExcluded);
+    cell.classList.toggle("is-duplicate-raid", status.isDuplicate);
+  cell.title = `${character.characterName} · ${character.itemAvgLevel}`;
 
   const name = document.createElement("span");
   name.className = "raid-character-chip";
@@ -584,9 +639,10 @@ function createRaidOwnerCell(plan, owner, scope = "draft") {
   if (character) {
     const status = getRaidPlanCellStatus(plan, character, scope === "saved" ? state.raidPlans : state.raidPlanDrafts);
     cell.dataset.tier = getLevelTier(character.itemLevelNumber);
-    cell.classList.toggle("is-extra-raid", status.isExtra);
-    cell.classList.toggle("is-excluded-raid", status.isExcluded);
-    cell.classList.toggle("is-duplicate-raid", status.isDuplicate);
+  cell.classList.toggle("is-extra-raid", status.isExtra);
+  cell.classList.toggle("is-excluded-raid", status.isExcluded);
+  cell.classList.toggle("is-duplicate-raid", status.isDuplicate);
+    cell.classList.toggle("has-duplicate-option", getRaidCharacterOptionStatus(plan, character, scope === "saved" ? state.raidPlans : [...state.raidPlans, ...state.raidPlanDrafts]).isDuplicate);
   }
   const select = document.createElement("select");
   select.className = "raid-character-select";
@@ -765,8 +821,8 @@ function updateRaidPlanCharacter(id, owner, key) {
 async function updateSavedRaidPlan(id, patch) {
   state.raidPlans = getRaidPlanRows(state.raidPlans).map((plan) => (plan.id === id ? { ...plan, ...patch } : plan));
   saveRaidPlans();
-  await saveSheetState();
   renderRaidPlanner();
+  await saveSheetState();
 }
 
 function updateSavedRaidPlanLocal(id, patch, shouldRender = true) {
@@ -811,10 +867,16 @@ function editSelectedRaidPlan() {
 
 function cancelRaidEdits() {
   if (state.raidPlanEditBackup) state.raidPlans = cloneRaidPlans(state.raidPlanEditBackup);
-  state.raidPlanDrafts = [];
   state.selectedRaidPlanIds.clear();
   state.editingRaidPlanIds.clear();
   state.raidPlanEditBackup = null;
+  state.raidPlanFilter = null;
+  renderRaidPlanner();
+}
+
+function cancelRaidDrafts() {
+  state.raidPlanDrafts = [];
+  state.raidPlanFilter = null;
   renderRaidPlanner();
 }
 
@@ -1089,12 +1151,9 @@ function getRaidCharacterOptionStatus(plan, character, raidPlans) {
 }
 
 function canJoinRaid(character, raidName) {
-  const minLevel = getRaidMinLevel(raidName);
-  return !minLevel || character.itemLevelNumber >= minLevel;
-}
-
-function getRaidMinLevel(raidName) {
-  return raidCatalog.find((raid) => raid.name === raidName)?.minLevel ?? 0;
+  if (!raidName) return true;
+  const recommendation = getRaidRecommendation(character);
+  return recommendation.primary.includes(raidName) || recommendation.extra.includes(raidName);
 }
 
 function getRaidTier(raidName) {
@@ -1118,6 +1177,39 @@ function getRaidPlanRows(raidPlans = state.raidPlanDrafts) {
     ...plan,
     characters: Object.fromEntries(owners.map((owner) => [owner, plan.characters?.[owner] ?? ""])),
   }));
+}
+
+function getFilteredRaidPlanRows(rows) {
+  if (!state.raidPlanFilter) return rows;
+  if (state.raidPlanFilter.type === "raid") {
+    return rows.filter((plan) => plan.raidName === state.raidPlanFilter.value);
+  }
+  if (state.raidPlanFilter.type === "character") {
+    return rows.filter((plan) => Object.values(plan.characters ?? {}).includes(state.raidPlanFilter.value));
+  }
+  return rows;
+}
+
+function getRaidFilterOptions() {
+  return uniqueStrings(state.raidPlans.map((plan) => plan.raidName))
+    .sort((a, b) => a.localeCompare(b, "ko-KR"))
+    .map((raidName) => ({ label: raidName, value: raidName }));
+}
+
+function getCharacterFilterOptions(owner) {
+  const seen = new Set();
+  return getRaidPlanRows(state.raidPlans)
+    .map((plan) => plan.characters?.[owner])
+    .filter(Boolean)
+    .map((key) => findCharacterByKey(key))
+    .filter(Boolean)
+    .filter((character) => {
+      if (seen.has(character.key)) return false;
+      seen.add(character.key);
+      return true;
+    })
+    .sort(compareCharacters)
+    .map((character) => ({ label: character.characterName, value: character.key }));
 }
 
 function getOwners() {
