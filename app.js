@@ -194,9 +194,11 @@ function setRefreshButtonsDisabled(disabled) {
 async function fetchAccountRoster(account, options = {}) {
   const params = new URLSearchParams({ characterName: account.queryName });
   if (options.refresh) params.set("refresh", "1");
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15_000);
 
   try {
-    const response = await fetch(`/api/roster?${params.toString()}`);
+    const response = await fetch(`/api/roster?${params.toString()}`, { signal: controller.signal });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error ?? "조회에 실패했습니다.");
 
@@ -212,7 +214,12 @@ async function fetchAccountRoster(account, options = {}) {
 
     return { account, ok: true, cached: payload.cached, characters };
   } catch (error) {
+    if (error?.name === "AbortError") {
+      return { account, ok: false, error: "조회 시간이 초과됐습니다.", characters: [] };
+    }
     return { account, ok: false, error: error.message, characters: [] };
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -1531,7 +1538,6 @@ async function uploadOwnerProfileImage(owner, preview, file) {
   preview.src = dataUrl;
   setOwnerAvatarUrl(owner, dataUrl);
   saveAccounts();
-  await saveSheetState();
   renderAll();
   setStatus("프로필 사진 업로드중...", "loading");
 
@@ -1703,7 +1709,7 @@ function loadAlbumImages() {
 }
 
 function saveAlbumImages() {
-  localStorage.setItem(storageKeys.albumImages, JSON.stringify(state.albumImages));
+  writeJson(storageKeys.albumImages, state.albumImages);
 }
 function loadAccounts() {
   const savedAccounts = normalizeAccounts(readJson(storageKeys.accounts, null));
@@ -1714,7 +1720,7 @@ function loadAccounts() {
 }
 
 function saveAccounts() {
-  localStorage.setItem(storageKeys.accounts, JSON.stringify(state.accounts));
+  writeJson(storageKeys.accounts, state.accounts);
 }
 
 function loadAssignments() {
@@ -1722,7 +1728,7 @@ function loadAssignments() {
 }
 
 function saveAssignments() {
-  localStorage.setItem(storageKeys.assignments, JSON.stringify(state.assignments));
+  writeJson(storageKeys.assignments, state.assignments);
 }
 
 function loadRaidPlans() {
@@ -1730,7 +1736,7 @@ function loadRaidPlans() {
 }
 
 function saveRaidPlans() {
-  localStorage.setItem(storageKeys.raidPlans, JSON.stringify(state.raidPlans));
+  writeJson(storageKeys.raidPlans, state.raidPlans);
 }
 
 async function loadSheetState() {
@@ -1757,6 +1763,7 @@ async function loadSheetState() {
     if (!payload.exists) saveSheetState();
   } catch {
     state.isRemoteReady = false;
+    renderAll();
   }
 }
 
@@ -1805,6 +1812,15 @@ function readJson(key, fallback) {
     return value ? JSON.parse(value) : fallback;
   } catch {
     return fallback;
+  }
+}
+
+function writeJson(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+    return true;
+  } catch {
+    return false;
   }
 }
 
