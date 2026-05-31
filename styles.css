@@ -1879,10 +1879,6 @@ h3:has(.owner-avatar) {
     grid-template-columns: 1fr;
   }
 
- .raid-missing-pane {
-    max-height: 360px;
-  }
-
   .raid-side-missing-board {
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   }
