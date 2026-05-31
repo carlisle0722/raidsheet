@@ -74,6 +74,7 @@ const state = {
   raidPlanEditBackup: null,
   draggingRaidPlanId: null,
   raidPlanFilter: null,
+  missingRaidOwnerFilter: "",
   isLoading: false,
   isRemoteReady: false,
   lastUpdatedAt: null,
@@ -106,6 +107,7 @@ const elements = {
   resetRaidCompleteButton: document.querySelector("#reset-raid-complete-button"),
   raidSavedBoard: document.querySelector("#raid-saved-board"),
   raidSideMissingBoard: document.querySelector("#raid-side-missing-board"),
+  missingRaidOwnerFilter: document.querySelector("#missing-raid-owner-filter"),
   raidPlanHead: document.querySelector("#raid-plan-head"),
   raidPlanBody: document.querySelector("#raid-plan-body"),
   raidPlanSummary: document.querySelector("#raid-plan-summary"),
@@ -135,6 +137,10 @@ elements.deleteRaidRowButton.addEventListener("click", deleteSelectedRaidPlan);
 elements.cancelRaidEditButton.addEventListener("click", cancelRaidEdits);
 elements.cancelRaidDraftButton.addEventListener("click", cancelRaidDrafts);
 elements.resetRaidCompleteButton.addEventListener("click", resetRaidCompleted);
+elements.missingRaidOwnerFilter?.addEventListener("change", () => {
+  state.missingRaidOwnerFilter = elements.missingRaidOwnerFilter.value;
+  renderMissingRaidBoard();
+});
 for (const button of elements.tabButtons) {
   button.addEventListener("click", () => activateTab(button.dataset.tabTarget));
 }
@@ -360,10 +366,20 @@ function renderAssignedRosterBoard() {
 }
 
 function renderMissingRaidBoard() {
-  const owners = getOwners();
+  renderMissingRaidOwnerFilter();
+  const selectedOwner = state.missingRaidOwnerFilter;
+  const owners = selectedOwner ? getOwners().filter((owner) => owner === selectedOwner) : getOwners();
   const cards = owners.map((owner) => createMissingOwnerCard(owner));
   if (elements.missingRaidBoard) elements.missingRaidBoard.replaceChildren(...cards.map((card) => card.cloneNode(true)));
   if (elements.raidSideMissingBoard) elements.raidSideMissingBoard.replaceChildren(...cards);
+}
+
+function renderMissingRaidOwnerFilter() {
+  if (!elements.missingRaidOwnerFilter) return;
+  const currentValue = state.missingRaidOwnerFilter;
+  elements.missingRaidOwnerFilter.replaceChildren(new Option("전체", ""));
+  getOwners().forEach((owner) => elements.missingRaidOwnerFilter.add(new Option(getRaidTableDisplayName(owner), owner, owner === currentValue, owner === currentValue)));
+  elements.missingRaidOwnerFilter.value = currentValue;
 }
 
 function createMissingOwnerCard(owner) {
@@ -377,7 +393,7 @@ function createMissingOwnerCard(owner) {
   image.src = getOwnerAvatarUrl(owner);
   image.alt = "";
   const title = document.createElement("h3");
-  title.textContent = owner;
+  title.textContent = getRaidTableDisplayName(owner);
   heading.append(image, title);
 
   const characters = getCharactersForOwner(owner);
@@ -763,7 +779,7 @@ function createSavedRaidOwnerTableCell(plan, owner) {
 
   const name = document.createElement("span");
   name.className = "raid-character-chip";
-  name.textContent = `${character.characterName}`;
+  name.textContent = getRaidTableDisplayName(character.characterName);
   cell.append(name);
   return cell;
 }

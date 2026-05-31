@@ -670,7 +670,7 @@ h3:has(.owner-avatar) {
 }
 
 .raid-saved-table .raid-complete-col {
-  width: 42px;
+  width: 54px;
 }
 
 .raid-saved-table .raid-order-col {
@@ -678,7 +678,7 @@ h3:has(.owner-avatar) {
 }
 
 .raid-saved-table .raid-name-col {
-  width: 128px;
+  width: 116px;
 }
 
 .raid-saved-table .raid-owner-col {
@@ -1075,8 +1075,8 @@ h3:has(.owner-avatar) {
   background: transparent;
 }
 
-.raid-saved-table .raid-complete-col {
-  width: 42px;
+ .raid-saved-table .raid-complete-col {
+  width: 54px;
 }
 
 .raid-completed-cell {
@@ -1889,4 +1889,32 @@ h3:has(.owner-avatar) {
   .raid-side-missing-board {
     grid-template-columns: 1fr;
   }
+}
+
+.missing-filter-label {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 850;
+}
+
+.missing-filter-select {
+  min-width: 92px;
+  height: 30px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  color: var(--ink);
+  background: #fff;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.raid-saved-table th:nth-child(2) .raid-filter-heading {
+  min-width: 48px;
+}
+
+.raid-saved-table th:nth-child(2) .raid-filter-heading > span {
+  white-space: nowrap;
 }
