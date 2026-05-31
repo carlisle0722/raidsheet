@@ -1827,18 +1827,23 @@ h3:has(.owner-avatar) {
 }
 
 .raid-side-missing-board .missing-raid-group {
-  display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
+  display: flex;
   gap: 6px;
-  align-items: start;
+  align-items: center;
+  min-width: 0;
 }
 
 .raid-side-missing-board .missing-raid-label {
-  padding-top: 4px;
+  flex: 0 0 auto;
+  min-width: 50px;
+  padding-top: 0;
   font-size: 0.68rem;
+  white-space: nowrap;
 }
 
 .raid-side-missing-board .missing-raid-list {
+  flex: 1 1 auto;
+  min-width: 0;
   gap: 4px;
 }
 
