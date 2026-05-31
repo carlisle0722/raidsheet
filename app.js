@@ -73,7 +73,7 @@ const state = {
   editingRaidPlanIds: new Set(),
   raidPlanEditBackup: null,
   draggingRaidPlanId: null,
-  raidPlanFilters: createEmptyRaidPlanFilters(),
+  raidPlanFilter: null,
   isLoading: false,
   isRemoteReady: false,
   lastUpdatedAt: null,
@@ -81,6 +81,7 @@ const state = {
 
 const elements = {
   refreshButton: document.querySelector("#refresh-button"),
+  ownedRefreshButton: document.querySelector("#owned-refresh-button"),
   saveRosterButton: document.querySelector("#save-roster-button"),
   editAccountsButton: document.querySelector("#edit-accounts-button"),
   openRosterButton: document.querySelector("#open-roster-button"),
@@ -104,6 +105,7 @@ const elements = {
   cancelRaidDraftButton: document.querySelector("#cancel-raid-draft-button"),
   resetRaidCompleteButton: document.querySelector("#reset-raid-complete-button"),
   raidSavedBoard: document.querySelector("#raid-saved-board"),
+  raidSideMissingBoard: document.querySelector("#raid-side-missing-board"),
   raidPlanHead: document.querySelector("#raid-plan-head"),
   raidPlanBody: document.querySelector("#raid-plan-body"),
   raidPlanSummary: document.querySelector("#raid-plan-summary"),
@@ -119,6 +121,7 @@ const elements = {
 };
 
 elements.refreshButton.addEventListener("click", () => loadRosters({ refresh: true }));
+elements.ownedRefreshButton?.addEventListener("click", () => loadRosters({ refresh: true }));
 elements.saveRosterButton.addEventListener("click", saveRosterChanges);
 elements.editAccountsButton.addEventListener("click", openAccountEditor);
 elements.openRosterButton.addEventListener("click", openRosterDialog);
@@ -357,9 +360,10 @@ function renderAssignedRosterBoard() {
 }
 
 function renderMissingRaidBoard() {
-  if (!elements.missingRaidBoard) return;
   const owners = getOwners();
-  elements.missingRaidBoard.replaceChildren(...owners.map((owner) => createMissingOwnerCard(owner)));
+  const cards = owners.map((owner) => createMissingOwnerCard(owner));
+  if (elements.missingRaidBoard) elements.missingRaidBoard.replaceChildren(...cards.map((card) => card.cloneNode(true)));
+  if (elements.raidSideMissingBoard) elements.raidSideMissingBoard.replaceChildren(...cards);
 }
 
 function createMissingOwnerCard(owner) {
@@ -559,7 +563,7 @@ function createTableHeader(label) {
 
 function createRaidHeaderCell() {
   const cell = createTableHeader("");
-  cell.append(createFilterHeaderContent("레이드", "raid", getRaidFilterOptions(), state.raidPlanFilters.raid));
+  cell.append(createFilterHeaderContent("레이드", "raid", getRaidFilterOptions(), state.raidPlanFilter?.type === "raid" ? state.raidPlanFilter.value : ""));
   return cell;
 }
 
@@ -593,7 +597,7 @@ function createFilterHeaderContent(label, type, options, selectedValue, owner = 
   select.value = selectedValue;
   select.addEventListener("click", (event) => event.stopPropagation());
   select.addEventListener("change", () => {
-    updateRaidPlanFilter(type, select.value, owner);
+    state.raidPlanFilter = createRaidPlanFilter(type, select.value, owner);
     state.selectedRaidPlanIds.clear();
     state.editingRaidPlanIds.clear();
     renderRaidPlanner();
@@ -612,7 +616,7 @@ function createFilterHeaderContent(label, type, options, selectedValue, owner = 
 
 function createCompletedHeaderCell() {
   const cell = createTableHeader("");
-  cell.append(createFilterHeaderContent("완료", "status", getStatusFilterOptions(), state.raidPlanFilters.status));
+  cell.append(createFilterHeaderContent("완료", "status", getStatusFilterOptions(), state.raidPlanFilter?.type === "status" ? state.raidPlanFilter.value : ""));
   return cell;
 }
 
@@ -781,7 +785,7 @@ function createRaidOwnerCell(plan, owner, scope = "draft") {
   select.add(new Option("", ""));
   const raidPlans = scope === "saved" ? state.raidPlans : [...state.raidPlans, ...state.raidPlanDrafts];
   for (const character of getCharactersForOwner(owner).filter((item) => canJoinRaid(item, plan.raidName))) {
-    const option = new Option(character.characterName, character.key, character.key === plan.characters?.[owner], character.key === plan.characters?.[owner]);
+    const option = new Option(getRaidTableDisplayName(character.characterName), character.key, character.key === plan.characters?.[owner], character.key === plan.characters?.[owner]);
     const optionStatus = getRaidCharacterOptionStatus(plan, character, raidPlans);
     if (optionStatus.isDuplicate) {
       option.className = "is-duplicate-option";
@@ -1042,14 +1046,14 @@ function cancelRaidEdits() {
   state.selectedRaidPlanIds.clear();
   state.editingRaidPlanIds.clear();
   state.raidPlanEditBackup = null;
-  state.raidPlanFilters = createEmptyRaidPlanFilters();
+  state.raidPlanFilter = null;
   renderRaidPlanner();
   renderMissingRaidBoard();
 }
 
 function cancelRaidDrafts() {
   state.raidPlanDrafts = [];
-  state.raidPlanFilters = createEmptyRaidPlanFilters();
+  state.raidPlanFilter = null;
   renderRaidPlanner();
   renderMissingRaidBoard();
 }
@@ -1352,44 +1356,20 @@ function getRaidPlanRows(raidPlans = state.raidPlanDrafts) {
   }));
 }
 
-function createEmptyRaidPlanFilters() {
-  return { raid: "", status: "", owners: {} };
-}
-
 function getFilteredRaidPlanRows(rows) {
-  const filters = state.raidPlanFilters ?? createEmptyRaidPlanFilters();
-  return rows.filter((plan) => {
-    if (filters.raid && plan.raidName !== filters.raid) return false;
-    if (filters.status === "completed" && !plan.completed) return false;
-    if (filters.status === "pending" && plan.completed) return false;
-
-    for (const [owner, filter] of Object.entries(filters.owners ?? {})) {
-      if (!filter?.mode) continue;
-      const characterKey = plan.characters?.[owner] ?? "";
-      if (filter.mode === "exclude-owner" && characterKey) return false;
-      if (filter.mode === "character" && characterKey !== filter.value) return false;
-    }
-
-    return true;
-  });
+  if (!state.raidPlanFilter) return rows;
+  const { type, owner, value } = state.raidPlanFilter;
+  if (type === "raid") return rows.filter((plan) => plan.raidName === value);
+  if (type === "status") return rows.filter((plan) => (value === "completed" ? plan.completed : !plan.completed));
+  if (type === "exclude-owner") return rows.filter((plan) => !plan.characters?.[owner]);
+  if (type === "character") return rows.filter((plan) => plan.characters?.[owner] === value);
+  return rows;
 }
 
-function updateRaidPlanFilter(type, value, owner = "") {
-  const next = {
-    raid: state.raidPlanFilters?.raid ?? "",
-    status: state.raidPlanFilters?.status ?? "",
-    owners: { ...(state.raidPlanFilters?.owners ?? {}) },
-  };
-
-  if (type === "raid") next.raid = value;
-  if (type === "status") next.status = value;
-  if (type === "character") {
-    if (!value) delete next.owners[owner];
-    else if (value === "__exclude_owner__") next.owners[owner] = { mode: "exclude-owner" };
-    else next.owners[owner] = { mode: "character", value };
-  }
-
-  state.raidPlanFilters = next;
+function createRaidPlanFilter(type, value, owner = "") {
+  if (!value) return null;
+  if (type === "character" && value === "__exclude_owner__") return { type: "exclude-owner", owner, value };
+  return { type, owner, value };
 }
 
 function getStatusFilterOptions() {
@@ -1400,10 +1380,11 @@ function getStatusFilterOptions() {
 }
 
 function getOwnerFilterValue(owner) {
-  const filter = state.raidPlanFilters?.owners?.[owner];
-  if (!filter) return "";
-  if (filter.mode === "exclude-owner") return "__exclude_owner__";
-  return filter.value ?? "";
+  const filter = state.raidPlanFilter;
+  if (!filter || filter.owner !== owner) return "";
+  if (filter.type === "exclude-owner") return "__exclude_owner__";
+  if (filter.type === "character") return filter.value ?? "";
+  return "";
 }
 
 function getOwnerFilterOptions(owner) {
@@ -1412,7 +1393,6 @@ function getOwnerFilterOptions(owner) {
     ...getCharacterFilterOptions(owner),
   ];
 }
-
 function getRaidFilterOptions() {
   return uniqueStrings(state.raidPlans.map((plan) => plan.raidName))
     .sort(compareRaidFilterOrder)

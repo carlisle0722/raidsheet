@@ -689,7 +689,7 @@ h3:has(.owner-avatar) {
 .raid-saved-table td,
 .raid-planner-table th,
 .raid-planner-table td {
-  height: 42px;
+  height: 46px;
   border: 0;
   padding: 5px;
   vertical-align: middle;
@@ -1076,7 +1076,7 @@ h3:has(.owner-avatar) {
 }
 
 .raid-saved-table .raid-complete-col {
-  width: 42px;
+  width: 38px;
 }
 
 .raid-completed-cell {
@@ -1700,6 +1700,122 @@ h3:has(.owner-avatar) {
   }
 
   .missing-raid-board {
+    grid-template-columns: 1fr;
+  }
+}
+
+.raid-overview-layout {
+  display: grid;
+  grid-template-columns: minmax(620px, 760px) 280px;
+  gap: 14px;
+  align-items: start;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.raid-table-pane {
+  min-width: 0;
+}
+
+.raid-overview-layout .raid-saved-board {
+  margin-bottom: 0;
+}
+
+.raid-missing-pane {
+  display: grid;
+  gap: 10px;
+  width: 280px;
+  max-height: 680px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 12px 30px rgba(24, 31, 42, 0.055);
+}
+
+.raid-missing-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.raid-missing-heading h3 {
+  margin: 0;
+  font-size: 1.02rem;
+}
+
+.raid-side-missing-board {
+  display: grid;
+  gap: 8px;
+  max-height: 594px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.raid-side-missing-board .missing-owner-card {
+  min-width: 0;
+}
+
+.raid-side-missing-board .missing-owner-heading {
+  min-height: 42px;
+  padding: 8px 10px;
+}
+
+.raid-side-missing-board .missing-owner-heading h3 {
+  font-size: 0.9rem;
+}
+
+.raid-side-missing-board .missing-owner-body {
+  gap: 6px;
+  padding: 7px;
+}
+
+.raid-side-missing-board .missing-character-row {
+  gap: 6px;
+  padding: 8px;
+  border-inline-width: 4px;
+}
+
+.raid-side-missing-board .missing-character-main strong {
+  font-size: 0.86rem;
+}
+
+.raid-side-missing-board .missing-character-main span,
+.raid-side-missing-board .missing-raid-label,
+.raid-side-missing-board .missing-raid-chip,
+.raid-side-missing-board .missing-raid-list em {
+  font-size: 0.7rem;
+}
+
+@media (max-width: 1180px) {
+  .raid-overview-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .raid-missing-pane {
+    width: 100%;
+    max-height: 360px;
+  }
+
+  .raid-side-missing-board {
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+    max-height: 280px;
+  }
+}
+
+@media (max-width: 760px) {
+  .raid-overview-layout {
+    display: block;
+  }
+
+  .raid-missing-pane {
+    margin-top: 12px;
+  }
+
+  .raid-side-missing-board {
     grid-template-columns: 1fr;
   }
 }

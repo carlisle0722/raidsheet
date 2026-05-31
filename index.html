@@ -55,7 +55,7 @@
 
         <div id="owned-panel" class="tab-panel is-active" role="tabpanel" aria-labelledby="owned-tab">
           <section class="planner-section" aria-labelledby="planner-title">
-            <div class="section-heading"><div><p class="eyebrow">Character List</p><h2 id="planner-title">보유 캐릭터</h2></div></div>
+            <div class="section-heading"><div><p class="eyebrow">Character List</p><h2 id="planner-title">보유 캐릭터</h2></div><button id="owned-refresh-button" class="secondary-button" type="button">새로고침</button></div>
             <div id="assignment-board" class="assignment-board"></div>
           </section>
         </div>
@@ -76,7 +76,18 @@
                 </div>
               </div>
             </div>
-            <div id="raid-saved-board" class="raid-saved-board"></div>
+                        <div class="raid-overview-layout">
+              <div class="raid-table-pane">
+                <div id="raid-saved-board" class="raid-saved-board"></div>
+              </div>
+              <aside class="raid-missing-pane" aria-labelledby="raid-side-missing-title">
+                <div class="raid-missing-heading">
+                  <div><p class="eyebrow">Missing Raid</p><h3 id="raid-side-missing-title">누락 레이드</h3></div>
+                  <p class="hint">편성표 기준</p>
+                </div>
+                <div id="raid-side-missing-board" class="raid-side-missing-board"></div>
+              </aside>
+            </div>
             <div class="raid-editor-area">
               <div class="section-heading compact-heading">
                 <div><p class="eyebrow">Edit Queue</p><h3>레이드 추가 등록</h3></div>
