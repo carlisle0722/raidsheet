@@ -1713,20 +1713,21 @@ h3:has(.owner-avatar) {
 }
 
 .raid-table-pane {
+  display: flex;
   min-width: 0;
 }
 
 .raid-overview-layout .raid-saved-board {
-  height: 100%;
+  flex: 1 1 auto;
   margin-bottom: 0;
 }
 
 .raid-missing-pane {
   display: grid;
+  align-self: stretch;
   grid-template-rows: auto minmax(0, 1fr);
   min-width: 280px;
   min-height: 0;
-  max-height: 720px;
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -1876,7 +1877,7 @@ h3:has(.owner-avatar) {
     grid-template-columns: 1fr;
   }
 
-  .raid-missing-pane {
+ .raid-missing-pane {
     max-height: 360px;
   }
 
