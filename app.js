@@ -404,8 +404,37 @@ function renderMissingRaidBoard() {
   renderMissingRaidOwnerFilter();
   const selectedOwner = state.missingRaidOwnerFilter;
   const owners = selectedOwner ? getOwners().filter((owner) => owner === selectedOwner) : getOwners();
-  const cards = owners.map((owner) => createMissingOwnerCard(owner)).filter(Boolean);
+  const cards = owners.map((owner) => {
+    try {
+      return createMissingOwnerCard(owner);
+    } catch (error) {
+      console.error(error);
+      return createMissingErrorCard(owner);
+    }
+  }).filter(Boolean);
   if (elements.raidSideMissingBoard) elements.raidSideMissingBoard.replaceChildren(...cards);
+}
+
+function createMissingErrorCard(owner) {
+  const card = document.createElement("article");
+  card.className = "missing-owner-card";
+  const heading = document.createElement("div");
+  heading.className = "missing-owner-heading";
+  const image = document.createElement("img");
+  image.className = "owner-avatar";
+  image.src = getOwnerAvatarUrl(owner);
+  image.alt = "";
+  const title = document.createElement("h3");
+  title.textContent = getRaidTableDisplayName(owner);
+  heading.append(image, title);
+  const body = document.createElement("div");
+  body.className = "missing-owner-body";
+  const message = document.createElement("p");
+  message.className = "missing-empty";
+  message.textContent = "누락 레이드를 계산할 수 없습니다.";
+  body.append(message);
+  card.append(heading, body);
+  return card;
 }
 
 function renderMissingRaidOwnerFilter() {
