@@ -413,7 +413,7 @@ function createMissingCharacterRow(data) {
   const main = document.createElement("div");
   main.className = "missing-character-main";
   const name = document.createElement("strong");
-  name.textContent = character.characterName;
+  name.textContent = getRaidTableDisplayName(character.characterName);
   const meta = document.createElement("span");
   meta.textContent = character.characterClassName + " · " + character.itemAvgLevel;
   main.append(name, meta);
