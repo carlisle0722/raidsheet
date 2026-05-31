@@ -4,6 +4,7 @@ const storageKeys = {
   legacyAccounts: "raidsheet:accounts:v3",
   assignments: "raidsheet:assignments:v2",
   raidPlans: "raidsheet:raid-plans:v1",
+  albumImages: "raidsheet:album-images:v1",
 };
 
 const names = {
@@ -69,6 +70,7 @@ const state = {
   assignments: loadAssignments(),
   raidPlans: loadRaidPlans(),
   raidPlanDrafts: [],
+  albumImages: loadAlbumImages(),
   selectedRaidPlanIds: new Set(),
   editingRaidPlanIds: new Set(),
   raidPlanEditBackup: null,
@@ -92,6 +94,7 @@ const elements = {
   addAccountButton: document.querySelector("#add-account-button"),
   saveAccountsButton: document.querySelector("#save-accounts-button"),
   status: document.querySelector("#status"),
+  ownedStatus: document.querySelector("#owned-status"),
   savingOverlay: document.querySelector("#saving-overlay"),
   profileBoard: document.querySelector("#profile-board"),
   assignmentBoard: document.querySelector("#assignment-board"),
@@ -111,7 +114,10 @@ const elements = {
   raidPlanHead: document.querySelector("#raid-plan-head"),
   raidPlanBody: document.querySelector("#raid-plan-body"),
   raidPlanSummary: document.querySelector("#raid-plan-summary"),
-  missingRaidBoard: document.querySelector("#missing-raid-board"),
+  albumBoard: document.querySelector("#album-board"),
+  albumUploadInput: document.querySelector("#album-upload-input"),
+  addAlbumButton: document.querySelector("#add-album-button"),
+  albumCount: document.querySelector("#album-count"),
   tabButtons: [...document.querySelectorAll("[data-tab-target]")],
   tabPanels: [...document.querySelectorAll(".tab-panel")],
   ownerCount: document.querySelector("#owner-count"),
@@ -129,6 +135,8 @@ elements.editAccountsButton.addEventListener("click", openAccountEditor);
 elements.openRosterButton.addEventListener("click", openRosterDialog);
 elements.addAccountButton.addEventListener("click", addAccountEditorRow);
 elements.saveAccountsButton.addEventListener("click", saveAccountEditor);
+elements.addAlbumButton?.addEventListener("click", () => elements.albumUploadInput?.click());
+elements.albumUploadInput?.addEventListener("change", (event) => addAlbumImages(event.target.files));
 elements.addRaidRowButton.addEventListener("click", addRaidPlanRow);
 elements.saveRaidPlanButton.addEventListener("click", saveSavedRaidPlanChanges);
 elements.saveRaidPlanBottomButton.addEventListener("click", saveRaidDraftChanges);
@@ -140,6 +148,7 @@ elements.resetRaidCompleteButton.addEventListener("click", resetRaidCompleted);
 elements.missingRaidOwnerFilter?.addEventListener("change", () => {
   state.missingRaidOwnerFilter = elements.missingRaidOwnerFilter.value;
   renderMissingRaidBoard();
+  renderAlbumBoard();
 });
 for (const button of elements.tabButtons) {
   button.addEventListener("click", () => activateTab(button.dataset.tabTarget));
@@ -370,7 +379,6 @@ function renderMissingRaidBoard() {
   const selectedOwner = state.missingRaidOwnerFilter;
   const owners = selectedOwner ? getOwners().filter((owner) => owner === selectedOwner) : getOwners();
   const cards = owners.map((owner) => createMissingOwnerCard(owner));
-  if (elements.missingRaidBoard) elements.missingRaidBoard.replaceChildren(...cards.map((card) => card.cloneNode(true)));
   if (elements.raidSideMissingBoard) elements.raidSideMissingBoard.replaceChildren(...cards);
 }
 
@@ -1569,6 +1577,88 @@ function createSkeletonRow() {
   return row;
 }
 
+function renderAlbumBoard() {
+  if (!elements.albumBoard) return;
+  if (elements.albumCount) elements.albumCount.textContent = `${state.albumImages.length}/10`;
+
+  if (!state.albumImages.length) {
+    const empty = document.createElement("p");
+    empty.className = "album-empty";
+    empty.textContent = "앨범에 표시할 사진을 추가해 주세요.";
+    elements.albumBoard.replaceChildren(empty);
+    return;
+  }
+
+  elements.albumBoard.replaceChildren(...state.albumImages.map((item) => {
+    const card = document.createElement("article");
+    card.className = "album-card";
+    const image = document.createElement("img");
+    image.src = item.url;
+    image.alt = item.name || "앨범 사진";
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "album-remove-button";
+    remove.setAttribute("aria-label", "앨범 사진 삭제");
+    remove.textContent = "×";
+    remove.addEventListener("click", () => removeAlbumImage(item.id));
+    card.append(image, remove);
+    return card;
+  }));
+}
+
+async function addAlbumImages(files) {
+  const selectedFiles = [...(files ?? [])].filter((file) => file.type.startsWith("image/"));
+  if (!selectedFiles.length) return;
+  const slots = Math.max(0, 10 - state.albumImages.length);
+  if (!slots) {
+    setStatus("앨범은 최대 10장까지 추가할 수 있습니다.", "error");
+    return;
+  }
+
+  const nextImages = [];
+  for (const file of selectedFiles.slice(0, slots)) {
+    const dataUrl = await readFileAsDataUrl(file);
+    const url = await uploadAlbumImage(file, dataUrl);
+    nextImages.push({ id: createId("album"), name: file.name, url });
+  }
+
+  state.albumImages = [...state.albumImages, ...nextImages].slice(0, 10);
+  saveAlbumImages();
+  await saveSheetState();
+  renderAlbumBoard();
+  if (elements.albumUploadInput) elements.albumUploadInput.value = "";
+  setStatus("앨범 사진 추가 완료", "success");
+}
+
+async function uploadAlbumImage(file, dataUrl) {
+  try {
+    const response = await fetch("/api/album-image", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ fileName: file.name, contentType: file.type, dataUrl }),
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error ?? "앨범 사진 업로드에 실패했습니다.");
+    return payload.url;
+  } catch {
+    return dataUrl;
+  }
+}
+
+function removeAlbumImage(id) {
+  state.albumImages = state.albumImages.filter((item) => item.id !== id);
+  saveAlbumImages();
+  saveSheetState();
+  renderAlbumBoard();
+}
+
+function loadAlbumImages() {
+  return normalizeAlbumImages(readJson(storageKeys.albumImages, []));
+}
+
+function saveAlbumImages() {
+  localStorage.setItem(storageKeys.albumImages, JSON.stringify(state.albumImages));
+}
 function loadAccounts() {
   const savedAccounts = normalizeAccounts(readJson(storageKeys.accounts, null));
   if (savedAccounts.length) return mergeDefaultAvatars(savedAccounts);
@@ -1605,10 +1695,12 @@ async function loadSheetState() {
     const remoteAccounts = normalizeAccounts(payload.accounts);
     const remoteAssignments = normalizeAssignments(payload.assignments);
     const remoteRaidPlans = normalizeRaidPlans(payload.raidPlans);
+    const remoteAlbumImages = normalizeAlbumImages(payload.albumImages);
     const nextAccounts = remoteAccounts.length ? mergeAccountLists(remoteAccounts, state.accounts) : state.accounts;
     state.accounts = mergeDefaultAvatars(nextAccounts);
     if (Array.isArray(payload.assignments)) state.assignments = remoteAssignments;
     if (Array.isArray(payload.raidPlans)) state.raidPlans = remoteRaidPlans;
+    if (Array.isArray(payload.albumImages)) state.albumImages = remoteAlbumImages;
     state.raidPlanDrafts = [];
     state.isRemoteReady = true;
     saveAccounts();
@@ -1626,7 +1718,7 @@ async function saveSheetState() {
     const response = await fetch("/api/state", {
       method: "PUT",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ accounts: state.accounts, assignments: state.assignments, raidPlans: state.raidPlans }),
+      body: JSON.stringify({ accounts: state.accounts, assignments: state.assignments, raidPlans: state.raidPlans, albumImages: state.albumImages }),
     });
     state.isRemoteReady = response.ok;
     return response.ok;
@@ -1691,6 +1783,18 @@ function createOwnerOptions(selectedOwner = "") {
   return ownerOptions.map((owner) => `<option value="${escapeAttribute(owner)}"${owner === selectedOwner ? " selected" : ""}>${owner}</option>`).join("");
 }
 
+function normalizeAlbumImages(images) {
+  if (!Array.isArray(images)) return [];
+  return images.map((image, index) => {
+    const url = String(image?.url ?? "");
+    if (!url) return null;
+    return {
+      id: String(image?.id ?? `album-${index}`),
+      name: String(image?.name ?? ""),
+      url,
+    };
+  }).filter(Boolean).slice(0, 10);
+}
 function normalizeAssignments(assignments) {
   if (!Array.isArray(assignments)) return [];
   return assignments.map((assignment) => {

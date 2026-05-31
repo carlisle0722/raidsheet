@@ -1919,3 +1919,17 @@ h3:has(.owner-avatar) {
 .raid-saved-table th:nth-child(2) .raid-filter-heading > span {
   white-space: nowrap;
 }
+
+.owned-heading-actions { display: flex; gap: 10px; align-items: center; }
+.owned-heading-actions .status { min-height: 34px; }
+.raid-overview-layout { max-height: 760px; }
+.raid-overview-layout .raid-saved-board, .raid-missing-pane { max-height: 760px; }
+.raid-overview-layout .raid-saved-board { overflow: auto; }
+.album-section { padding: 18px; border: 1px solid var(--line); border-radius: 0 0 10px 10px; background: var(--surface); box-shadow: var(--shadow); }
+.album-actions { display: flex; gap: 10px; align-items: center; }
+.album-actions strong { color: var(--muted); font-size: 0.86rem; }
+.album-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+.album-card { position: relative; overflow: hidden; aspect-ratio: 1 / 1; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-soft); }
+.album-card img { width: 100%; height: 100%; object-fit: cover; }
+.album-remove-button { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; border: 1px solid rgba(255,255,255,0.7); border-radius: 999px; color: #fff; background: rgba(25,29,36,0.55); font-size: 1rem; font-weight: 900; }
+.album-empty { padding: 42px 16px; border: 1px dashed var(--line-strong); border-radius: 8px; color: var(--muted); background: var(--surface-soft); font-weight: 800; text-align: center; }
