@@ -193,7 +193,7 @@ async function loadRosters(options = {}) {
 
   state.isLoading = true;
   setRefreshButtonsDisabled(true);
-  setStatus(options.refresh ? "새로 조회 중" : "자동 조회 중", "loading");
+  setCharacterLoadStatus(options.refresh ? "새로 조회 중" : "자동 조회 중", "loading");
   renderRosterBoard(true);
 
   try {
@@ -202,7 +202,7 @@ async function loadRosters(options = {}) {
     state.lastUpdatedAt = new Date();
     pruneAssignments();
   } catch (error) {
-    setStatus(error.message || "조회에 실패했습니다.", "error");
+    setCharacterLoadStatus(error.message || "조회에 실패했습니다.", "error");
   } finally {
     state.isLoading = false;
     setRefreshButtonsDisabled(false);
@@ -1412,7 +1412,7 @@ function renderStatus() {
   const cachedCount = state.rosters.filter((roster) => roster.cached).length;
   const time = state.lastUpdatedAt?.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
   const cacheText = cachedCount ? ` · 캐시 ${cachedCount}건` : "";
-  setStatus(`${time} 기준 ${minItemLevel}+ ${total}명 조회${cacheText}`, "success");
+  setCharacterLoadStatus(`${time} 기준 ${minItemLevel}+ ${total}명 조회${cacheText}`, "success");
 }
 
 function setStatus(message, tone = "neutral") {
@@ -1420,10 +1420,18 @@ function setStatus(message, tone = "neutral") {
     elements.status.textContent = message;
     elements.status.dataset.tone = tone;
   }
+}
+
+function setOwnedStatus(message, tone = "neutral") {
   if (elements.ownedStatus) {
     elements.ownedStatus.textContent = message;
     elements.ownedStatus.dataset.tone = tone;
   }
+}
+
+function setCharacterLoadStatus(message, tone = "neutral") {
+  setStatus(message, tone);
+  setOwnedStatus(message, tone);
 }
 
 function getAllCharacters() {
@@ -1768,14 +1776,20 @@ function openMemoDialog() {
   elements.memoAuthorInput?.focus();
 }
 
-function saveMemoFromDialog() {
+async function saveMemoFromDialog() {
   const author = elements.memoAuthorInput?.value.trim() ?? "";
   const content = elements.memoContentInput?.value.trim() ?? "";
   if (!author || !content) {
     setStatus("작성자와 메모 내용을 입력해 주세요.", "error");
     return;
   }
+  if (content.length > 100) {
+    setStatus("메모 내용은 100자 이하로 입력해 주세요.", "error");
+    return;
+  }
 
+  showSavingOverlay("등록중...");
+  const previousNotes = state.memoNotes;
   state.memoNotes = [
     {
       id: createId("memo"),
@@ -1785,11 +1799,21 @@ function saveMemoFromDialog() {
     },
     ...state.memoNotes,
   ];
-  saveMemoNotes();
-  saveSheetState();
-  renderMemoBoard();
-  elements.memoDialog?.close();
-  setStatus("메모 등록 완료", "success");
+  try {
+    saveMemoNotes();
+    const ok = await saveSheetState();
+    if (!ok) throw new Error("메모를 DB에 저장하지 못했습니다.");
+    renderMemoBoard();
+    elements.memoDialog?.close();
+    setStatus("메모 등록 완료", "success");
+  } catch (error) {
+    state.memoNotes = previousNotes;
+    saveMemoNotes();
+    renderMemoBoard();
+    setStatus(error.message || "메모 등록 실패", "error");
+  } finally {
+    hideSavingOverlay();
+  }
 }
 
 function renderMemoBoard() {
@@ -1827,11 +1851,24 @@ function renderMemoBoard() {
   elements.memoBoard.replaceChildren(...notes);
 }
 
-function removeMemoNote(id) {
+async function removeMemoNote(id) {
+  showSavingOverlay("삭제중...");
+  const previousNotes = state.memoNotes;
   state.memoNotes = state.memoNotes.filter((note) => note.id !== id);
-  saveMemoNotes();
-  saveSheetState();
-  renderMemoBoard();
+  try {
+    saveMemoNotes();
+    const ok = await saveSheetState();
+    if (!ok) throw new Error("메모를 DB에서 삭제하지 못했습니다.");
+    renderMemoBoard();
+    setStatus("메모 삭제 완료", "success");
+  } catch (error) {
+    state.memoNotes = previousNotes;
+    saveMemoNotes();
+    renderMemoBoard();
+    setStatus(error.message || "메모 삭제 실패", "error");
+  } finally {
+    hideSavingOverlay();
+  }
 }
 
 function formatMemoDate(value) {
@@ -1886,11 +1923,24 @@ async function uploadAlbumImage(file, dataUrl) {
   }
 }
 
-function removeAlbumImage(id) {
+async function removeAlbumImage(id) {
+  showSavingOverlay("삭제중...");
+  const previousImages = state.albumImages;
   state.albumImages = state.albumImages.filter((item) => item.id !== id);
-  saveAlbumImages();
-  saveSheetState();
-  renderAlbumBoard();
+  try {
+    saveAlbumImages();
+    const ok = await saveSheetState();
+    if (!ok) throw new Error("앨범 사진을 DB에서 삭제하지 못했습니다.");
+    renderAlbumBoard();
+    setStatus("앨범 사진 삭제 완료", "success");
+  } catch (error) {
+    state.albumImages = previousImages;
+    saveAlbumImages();
+    renderAlbumBoard();
+    setStatus(error.message || "앨범 사진 삭제 실패", "error");
+  } finally {
+    hideSavingOverlay();
+  }
 }
 
 function loadAlbumImages() {

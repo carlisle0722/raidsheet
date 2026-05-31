@@ -2032,6 +2032,7 @@ h3:has(.owner-avatar) {
 }
 
 .memo-field input,
+.memo-field select,
 .memo-field textarea {
   width: 100%;
   border: 1px solid var(--line-strong);
