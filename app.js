@@ -224,13 +224,21 @@ async function fetchAccountRoster(account, options = {}) {
 }
 
 function renderAll() {
-  renderSummary();
-  renderProfileBoard();
-  renderAssignmentBoard();
-  renderRosterBoard();
-  renderRaidPlanner();
-  renderMissingRaidBoard();
-  renderAlbumBoard();
+  [
+    renderSummary,
+    renderProfileBoard,
+    renderAssignmentBoard,
+    renderRosterBoard,
+    renderRaidPlanner,
+    renderMissingRaidBoard,
+    renderAlbumBoard,
+  ].forEach((render) => {
+    try {
+      render();
+    } catch (error) {
+      console.error(error);
+    }
+  });
 }
 
 function renderSummary() {
