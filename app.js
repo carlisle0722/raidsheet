@@ -83,6 +83,7 @@ const state = {
   raidPlanFilter: null,
   missingRaidOwnerFilter: "",
   missingRaidTypeFilter: "",
+  editingMemoId: null,
   isLoading: false,
   isRemoteReady: false,
   lastUpdatedAt: null,
@@ -1769,10 +1770,12 @@ function renderAlbumBoard() {
   elements.albumBoard.replaceChildren(...cells.slice(0, albumGridSlots));
 }
 
-function openMemoDialog() {
+function openMemoDialog(note = null) {
   if (!elements.memoDialog) return;
-  if (elements.memoAuthorInput) elements.memoAuthorInput.value = "";
-  if (elements.memoContentInput) elements.memoContentInput.value = "";
+  state.editingMemoId = note?.id ?? null;
+  if (elements.memoAuthorInput) elements.memoAuthorInput.value = note?.author ?? "";
+  if (elements.memoContentInput) elements.memoContentInput.value = note?.content ?? "";
+  if (elements.saveMemoButton) elements.saveMemoButton.textContent = note ? "수정" : "등록";
   setMemoError("");
   elements.memoDialog.showModal();
   elements.memoAuthorInput?.focus();
@@ -1791,29 +1794,40 @@ async function saveMemoFromDialog() {
     return;
   }
 
-  showSavingOverlay("등록중...");
+  const isEditing = Boolean(state.editingMemoId);
+  showSavingOverlay(isEditing ? "수정중..." : "등록중...");
   const previousNotes = state.memoNotes;
-  state.memoNotes = [
-    {
-      id: createId("memo"),
-      author,
-      content,
-      createdAt: new Date().toISOString(),
-    },
-    ...state.memoNotes,
-  ];
+  if (isEditing) {
+    state.memoNotes = state.memoNotes.map((note) => (
+      note.id === state.editingMemoId
+        ? { ...note, author, content, createdAt: new Date().toISOString(), modified: true }
+        : note
+    ));
+  } else {
+    state.memoNotes = [
+      {
+        id: createId("memo"),
+        author,
+        content,
+        createdAt: new Date().toISOString(),
+        modified: false,
+      },
+      ...state.memoNotes,
+    ];
+  }
   try {
     saveMemoNotes();
     const ok = await saveSheetState();
     if (!ok) throw new Error("메모를 DB에 저장하지 못했습니다.");
     renderMemoBoard();
     elements.memoDialog?.close();
-    setStatus("메모 등록 완료", "success");
+    state.editingMemoId = null;
+    setStatus(isEditing ? "메모 수정 완료" : "메모 등록 완료", "success");
   } catch (error) {
     state.memoNotes = previousNotes;
     saveMemoNotes();
     renderMemoBoard();
-    setStatus(error.message || "메모 등록 실패", "error");
+    setStatus(error.message || (isEditing ? "메모 수정 실패" : "메모 등록 실패"), "error");
   } finally {
     hideSavingOverlay();
   }
@@ -1843,14 +1857,20 @@ function renderMemoBoard() {
     const author = document.createElement("strong");
     author.textContent = note.author;
     const time = document.createElement("span");
-    time.textContent = formatMemoDate(note.createdAt);
+    time.textContent = `${formatMemoDate(note.createdAt)}${note.modified ? " (수정됨)" : ""}`;
+    const edit = document.createElement("button");
+    edit.type = "button";
+    edit.className = "memo-icon-button";
+    edit.setAttribute("aria-label", "메모 수정");
+    edit.textContent = "수정";
+    edit.addEventListener("click", () => openMemoDialog(note));
     const remove = document.createElement("button");
     remove.type = "button";
-    remove.className = "memo-remove-button";
+    remove.className = "memo-icon-button memo-remove-button";
     remove.setAttribute("aria-label", "메모 삭제");
     remove.textContent = "×";
     remove.addEventListener("click", () => removeMemoNote(note.id));
-    header.append(author, time, remove);
+    header.append(author, time, edit, remove);
     const content = document.createElement("p");
     content.textContent = note.content;
     card.append(header, content);
@@ -2138,6 +2158,7 @@ function normalizeMemoNotes(notes) {
       author,
       content,
       createdAt: String(note?.createdAt ?? new Date().toISOString()),
+      modified: Boolean(note?.modified),
     };
   }).filter(Boolean);
 }

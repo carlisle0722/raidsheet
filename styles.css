@@ -1989,7 +1989,7 @@ h3:has(.owner-avatar) {
 
 .memo-card-header {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
   gap: 8px;
   align-items: center;
 }
@@ -2014,13 +2014,23 @@ h3:has(.owner-avatar) {
   white-space: pre-wrap;
 }
 
-.memo-remove-button {
-  width: 24px;
+.memo-icon-button {
+  min-width: 28px;
   height: 24px;
+  padding: 0 7px;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: #fff;
   color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.memo-remove-button {
+  min-width: 24px;
+  width: 24px;
+  padding: 0;
+  font-size: 0.95rem;
   font-weight: 900;
 }
 
