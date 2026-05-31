@@ -409,13 +409,13 @@ function renderMissingRaidBoard() {
       return createMissingOwnerCard(owner);
     } catch (error) {
       console.error(error);
-      return createMissingErrorCard(owner);
+      return createMissingErrorCard(owner, error);
     }
   }).filter(Boolean);
   if (elements.raidSideMissingBoard) elements.raidSideMissingBoard.replaceChildren(...cards);
 }
 
-function createMissingErrorCard(owner) {
+function createMissingErrorCard(owner, error) {
   const card = document.createElement("article");
   card.className = "missing-owner-card";
   const heading = document.createElement("div");
@@ -431,7 +431,7 @@ function createMissingErrorCard(owner) {
   body.className = "missing-owner-body";
   const message = document.createElement("p");
   message.className = "missing-empty";
-  message.textContent = "누락 레이드를 계산할 수 없습니다.";
+  message.textContent = error?.message || "누락 레이드를 계산할 수 없습니다.";
   body.append(message);
   card.append(heading, body);
   return card;
