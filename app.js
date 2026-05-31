@@ -132,6 +132,7 @@ const elements = {
   memoDialog: document.querySelector("#memo-dialog"),
   memoAuthorInput: document.querySelector("#memo-author-input"),
   memoContentInput: document.querySelector("#memo-content-input"),
+  memoError: document.querySelector("#memo-error"),
   saveMemoButton: document.querySelector("#save-memo-button"),
   tabButtons: [...document.querySelectorAll("[data-tab-target]")],
   tabPanels: [...document.querySelectorAll(".tab-panel")],
@@ -1772,6 +1773,7 @@ function openMemoDialog() {
   if (!elements.memoDialog) return;
   if (elements.memoAuthorInput) elements.memoAuthorInput.value = "";
   if (elements.memoContentInput) elements.memoContentInput.value = "";
+  setMemoError("");
   elements.memoDialog.showModal();
   elements.memoAuthorInput?.focus();
 }
@@ -1779,8 +1781,9 @@ function openMemoDialog() {
 async function saveMemoFromDialog() {
   const author = elements.memoAuthorInput?.value.trim() ?? "";
   const content = elements.memoContentInput?.value.trim() ?? "";
+  setMemoError("");
   if (!author || !content) {
-    setStatus("작성자와 메모 내용을 입력해 주세요.", "error");
+    setMemoError("내용을 입력해주세요");
     return;
   }
   if (content.length > 100) {
@@ -1814,6 +1817,12 @@ async function saveMemoFromDialog() {
   } finally {
     hideSavingOverlay();
   }
+}
+
+function setMemoError(message) {
+  if (!elements.memoError) return;
+  elements.memoError.textContent = message;
+  elements.memoError.hidden = !message;
 }
 
 function renderMemoBoard() {
@@ -2050,10 +2059,18 @@ async function saveRaidPlansState() {
 
 function showSavingOverlay(message = "저장중...") {
   elements.savingOverlay.querySelector(".saving-panel").textContent = message;
+  if (typeof elements.savingOverlay.showModal === "function" && !elements.savingOverlay.open) {
+    elements.savingOverlay.showModal();
+    return;
+  }
   elements.savingOverlay.hidden = false;
 }
 
 function hideSavingOverlay() {
+  if (typeof elements.savingOverlay.close === "function" && elements.savingOverlay.open) {
+    elements.savingOverlay.close();
+    return;
+  }
   elements.savingOverlay.hidden = true;
 }
 

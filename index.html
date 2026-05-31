@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>레이드 시트</title>
-    <link rel="stylesheet" href="/styles.css?v=20260531-14" />
+    <link rel="stylesheet" href="/styles.css?v=20260531-15" />
   </head>
   <body>
     <main class="app-shell">
@@ -126,9 +126,9 @@
       </section>
     </main>
 
-    <div id="saving-overlay" class="saving-overlay" role="status" aria-live="polite" hidden>
+    <dialog id="saving-overlay" class="saving-overlay" role="status" aria-live="polite">
       <div class="saving-panel">저장중...</div>
-    </div>
+    </dialog>
 
     <dialog id="accounts-dialog" class="accounts-dialog">
       <form method="dialog" class="dialog-panel">
@@ -154,6 +154,7 @@
         <div class="dialog-heading"><div><p class="eyebrow">Memo</p><h2>메모 작성</h2></div><button class="icon-button" value="cancel" type="submit" aria-label="닫기">×</button></div>
         <label class="memo-field">작성자<select id="memo-author-input"><option value="">작성자 선택</option><option value="꿀숑">꿀숑</option><option value="미느몬">미느몬</option><option value="삼대">삼대</option><option value="바들">바들</option><option value="디뚜">디뚜</option></select></label>
         <label class="memo-field">메모 내용<textarea id="memo-content-input" rows="5" maxlength="100" placeholder="메모 내용을 입력하세요."></textarea></label>
+        <p id="memo-error" class="memo-error" role="alert" hidden></p>
         <div class="dialog-actions"><button class="secondary-button" value="cancel" type="submit">취소</button><button id="save-memo-button" class="primary-button" type="button">등록</button></div>
       </form>
     </dialog>
@@ -161,6 +162,6 @@
     <template id="owner-column-template"><article class="owner-column"><div class="owner-heading"><h3></h3><strong class="owner-count">0</strong></div><div class="assignment-list"></div></article></template>
     <template id="source-column-template"><article class="source-column"><div class="source-heading"><div><h3></h3><span class="source-meta"></span></div><strong class="source-count">0</strong></div><div class="character-list"></div></article></template>
     <template id="character-card-template"><div class="character-card"><div class="character-main"><strong class="character-name"></strong><span class="class-name"></span></div><div class="character-meta"><span class="source-owner"></span><strong class="item-level"></strong></div><div class="character-actions"></div></div></template>
-    <script src="/app.js?v=20260531-14" type="module"></script>
+    <script src="/app.js?v=20260531-15" type="module"></script>
   </body>
 </html>

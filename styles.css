@@ -1015,9 +1015,9 @@ h3:has(.owner-avatar) {
   padding: 2px 6px;
   border: 0;
   border-radius: 4px;
-  color: #334155;
-  font-size: 0.82rem;
-  font-weight: 650;
+  color: var(--ink);
+  font-size: 0.9rem;
+  font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1129,15 +1129,28 @@ h3:has(.owner-avatar) {
 .saving-overlay {
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: 10000;
   display: grid;
   place-items: center;
+  width: 100vw;
+  max-width: none;
+  height: 100vh;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
   background: rgba(245, 246, 248, 0.46);
   backdrop-filter: blur(2px);
 }
 
+.saving-overlay:not([open]),
 .saving-overlay[hidden] {
   display: none;
+}
+
+.saving-overlay::backdrop {
+  background: rgba(15, 18, 24, 0.28);
+  backdrop-filter: blur(2px);
 }
 
 .saving-panel {
@@ -2044,6 +2057,18 @@ h3:has(.owner-avatar) {
 
 .memo-field textarea {
   resize: vertical;
+}
+
+.memo-error {
+  margin: -4px 0 0;
+  padding: 9px 11px;
+  border: 1px solid rgba(180, 59, 69, 0.28);
+  border-radius: 999px;
+  color: var(--danger);
+  background: rgba(180, 59, 69, 0.06);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-align: center;
 }
 
 @media (max-width: 900px) {
