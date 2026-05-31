@@ -539,6 +539,12 @@ function getMissingRaidsForCharacter(character) {
   };
 }
 
+function filterMissingRaidsByType(missing) {
+  if (state.missingRaidTypeFilter === "primary") return { primary: missing.primary, extra: [] };
+  if (state.missingRaidTypeFilter === "extra") return { primary: [], extra: missing.extra };
+  return missing;
+}
+
 function getPlannedRaidsForCharacter(characterKey) {
   const planned = new Set();
   for (const plan of getRaidPlanRows(state.raidPlans)) {
