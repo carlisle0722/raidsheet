@@ -168,21 +168,29 @@ async function loadRosters(options = {}) {
   if (state.isLoading) return;
 
   state.isLoading = true;
-  elements.refreshButton.disabled = true;
+  setRefreshButtonsDisabled(true);
   setStatus(options.refresh ? "새로 조회 중" : "자동 조회 중", "loading");
   renderRosterBoard(true);
 
-  const results = await Promise.all(state.accounts.map((account) => fetchAccountRoster(account, options)));
-  state.rosters = results;
-  state.lastUpdatedAt = new Date();
-  state.isLoading = false;
-  elements.refreshButton.disabled = false;
-
-  pruneAssignments();
-  renderAll();
-  renderStatus();
+  try {
+    const results = await Promise.all(state.accounts.map((account) => fetchAccountRoster(account, options)));
+    state.rosters = results;
+    state.lastUpdatedAt = new Date();
+    pruneAssignments();
+  } catch (error) {
+    setStatus(error.message || "조회에 실패했습니다.", "error");
+  } finally {
+    state.isLoading = false;
+    setRefreshButtonsDisabled(false);
+    renderAll();
+    renderStatus();
+  }
 }
 
+function setRefreshButtonsDisabled(disabled) {
+  if (elements.refreshButton) elements.refreshButton.disabled = disabled;
+  if (elements.ownedRefreshButton) elements.ownedRefreshButton.disabled = disabled;
+}
 async function fetchAccountRoster(account, options = {}) {
   const params = new URLSearchParams({ characterName: account.queryName });
   if (options.refresh) params.set("refresh", "1");
@@ -1736,16 +1744,17 @@ async function loadSheetState() {
     const remoteAlbumImages = normalizeAlbumImages(payload.albumImages);
     const nextAccounts = remoteAccounts.length ? mergeAccountLists(remoteAccounts, state.accounts) : state.accounts;
     state.accounts = mergeDefaultAvatars(nextAccounts);
-    if (Array.isArray(payload.assignments)) state.assignments = remoteAssignments;
-    if (Array.isArray(payload.raidPlans)) state.raidPlans = remoteRaidPlans;
-    if (Array.isArray(payload.albumImages)) state.albumImages = remoteAlbumImages;
+    if (Array.isArray(payload.assignments) && (remoteAssignments.length || !state.assignments.length)) state.assignments = remoteAssignments;
+    if (Array.isArray(payload.raidPlans) && (remoteRaidPlans.length || !state.raidPlans.length)) state.raidPlans = remoteRaidPlans;
+    if (Array.isArray(payload.albumImages) && (remoteAlbumImages.length || !state.albumImages.length)) state.albumImages = remoteAlbumImages;
     state.raidPlanDrafts = [];
     state.isRemoteReady = true;
     saveAccounts();
     saveAssignments();
     saveRaidPlans();
+    saveAlbumImages();
     renderAll();
-    if (!payload.exists || nextAccounts.length !== remoteAccounts.length) saveSheetState();
+    if (!payload.exists) saveSheetState();
   } catch {
     state.isRemoteReady = false;
   }
