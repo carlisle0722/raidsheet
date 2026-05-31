@@ -1728,6 +1728,7 @@ h3:has(.owner-avatar) {
   grid-template-rows: auto minmax(0, 1fr);
   min-width: 280px;
   min-height: 0;
+  overflow: hidden;
   padding: 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -1754,6 +1755,7 @@ h3:has(.owner-avatar) {
   align-content: start;
   gap: 10px;
   min-height: 0;
+  max-height: 100%;
   overflow: auto;
   padding: 9px 2px 0 0;
 }

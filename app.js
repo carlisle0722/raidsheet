@@ -1,4 +1,5 @@
 const minItemLevel = 1700;
+const maxAlbumImages = 14;
 const storageKeys = {
   accounts: "raidsheet:accounts:v4",
   legacyAccounts: "raidsheet:accounts:v3",
@@ -110,6 +111,7 @@ const elements = {
   cancelRaidDraftButton: document.querySelector("#cancel-raid-draft-button"),
   resetRaidCompleteButton: document.querySelector("#reset-raid-complete-button"),
   raidSavedBoard: document.querySelector("#raid-saved-board"),
+  raidMissingPane: document.querySelector(".raid-missing-pane"),
   raidSideMissingBoard: document.querySelector("#raid-side-missing-board"),
   missingRaidOwnerFilter: document.querySelector("#missing-raid-owner-filter"),
   missingRaidTypeFilter: document.querySelector("#missing-raid-type-filter"),
@@ -150,7 +152,10 @@ elements.resetRaidCompleteButton.addEventListener("click", resetRaidCompleted);
 elements.missingRaidOwnerFilter?.addEventListener("change", () => {
   state.missingRaidOwnerFilter = elements.missingRaidOwnerFilter.value;
   renderMissingRaidBoard();
-  renderAlbumBoard();
+});
+elements.missingRaidTypeFilter?.addEventListener("change", () => {
+  state.missingRaidTypeFilter = elements.missingRaidTypeFilter.value;
+  renderMissingRaidBoard();
 });
 for (const button of elements.tabButtons) {
   button.addEventListener("click", () => activateTab(button.dataset.tabTarget));
@@ -162,6 +167,7 @@ initializeApp();
 async function initializeApp() {
   await loadSheetState();
   await loadRosters();
+  window.addEventListener("resize", syncMissingPaneHeight);
 }
 
 async function loadRosters(options = {}) {
@@ -413,6 +419,7 @@ function renderMissingRaidBoard() {
     }
   }).filter(Boolean);
   if (elements.raidSideMissingBoard) elements.raidSideMissingBoard.replaceChildren(...cards);
+  syncMissingPaneHeight();
 }
 
 function createMissingErrorCard(owner, error) {
@@ -558,6 +565,13 @@ function renderRaidPlanner() {
   renderSavedRaidPlanner(owners);
   renderRaidEditor(owners);
   renderRaidPlanActions();
+  syncMissingPaneHeight();
+}
+
+function syncMissingPaneHeight() {
+  if (!elements.raidSavedBoard || !elements.raidMissingPane) return;
+  const savedHeight = elements.raidSavedBoard.getBoundingClientRect().height;
+  if (savedHeight > 0) elements.raidMissingPane.style.height = `${Math.round(savedHeight)}px`;
 }
 
 function renderSavedRaidPlanner(owners) {
@@ -1305,6 +1319,8 @@ function activateTab(panelId) {
     panel.classList.toggle("is-active", isActive);
     panel.hidden = !isActive;
   }
+
+  if (panelId === "raid-panel") requestAnimationFrame(syncMissingPaneHeight);
 }
 
 function addAccountEditorRow(account = {}) {
@@ -1356,8 +1372,14 @@ function renderStatus() {
 }
 
 function setStatus(message, tone = "neutral") {
-  elements.status.textContent = message;
-  elements.status.dataset.tone = tone;
+  if (elements.status) {
+    elements.status.textContent = message;
+    elements.status.dataset.tone = tone;
+  }
+  if (elements.ownedStatus) {
+    elements.ownedStatus.textContent = message;
+    elements.ownedStatus.dataset.tone = tone;
+  }
 }
 
 function getAllCharacters() {
@@ -1655,9 +1677,9 @@ function createAlbumUploadTile() {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "album-upload-tile";
-  button.disabled = state.albumImages.length >= 10;
+  button.disabled = state.albumImages.length >= maxAlbumImages;
   const label = document.createElement("span");
-  label.textContent = state.albumImages.length >= 10 ? "최대 10장" : "사진 추가";
+  label.textContent = state.albumImages.length >= maxAlbumImages ? `최대 ${maxAlbumImages}장` : "사진 추가";
   button.append(label);
   button.addEventListener("click", () => elements.albumUploadInput?.click());
   return button;
@@ -1665,10 +1687,10 @@ function createAlbumUploadTile() {
 
 function renderAlbumBoard() {
   if (!elements.albumBoard) return;
-  if (elements.albumCount) elements.albumCount.textContent = `${state.albumImages.length}/10`;
+  if (elements.albumCount) elements.albumCount.textContent = `${state.albumImages.length}/${maxAlbumImages}`;
 
   const cells = [];
-  if (state.albumImages.length < 10) cells.push(createAlbumUploadTile());
+  if (state.albumImages.length < maxAlbumImages) cells.push(createAlbumUploadTile());
 
   cells.push(...state.albumImages.map((item) => {
     const card = document.createElement("article");
@@ -1686,20 +1708,20 @@ function renderAlbumBoard() {
     return card;
   }));
 
-  while (cells.length < 10) {
+  while (cells.length < maxAlbumImages) {
     const placeholder = document.createElement("div");
     placeholder.className = "album-placeholder";
     cells.push(placeholder);
   }
 
-  elements.albumBoard.replaceChildren(...cells.slice(0, 10));
+  elements.albumBoard.replaceChildren(...cells.slice(0, maxAlbumImages));
 }
 async function addAlbumImages(files) {
   const selectedFiles = [...(files ?? [])].filter((file) => file.type.startsWith("image/"));
   if (!selectedFiles.length) return;
-  const slots = Math.max(0, 10 - state.albumImages.length);
+  const slots = Math.max(0, maxAlbumImages - state.albumImages.length);
   if (!slots) {
-    setStatus("앨범은 최대 10장까지 추가할 수 있습니다.", "error");
+    setStatus(`앨범은 최대 ${maxAlbumImages}장까지 추가할 수 있습니다.`, "error");
     return;
   }
 
@@ -1712,7 +1734,7 @@ async function addAlbumImages(files) {
     nextImages.push({ id: createId("album"), name: file.name, url });
     }
 
-    state.albumImages = [...state.albumImages, ...nextImages].slice(0, 10);
+    state.albumImages = [...state.albumImages, ...nextImages].slice(0, maxAlbumImages);
     saveAlbumImages();
     await saveSheetState();
     renderAlbumBoard();
@@ -1899,7 +1921,7 @@ function normalizeAlbumImages(images) {
       name: String(image?.name ?? ""),
       url,
     };
-  }).filter(Boolean).slice(0, 10);
+  }).filter(Boolean).slice(0, maxAlbumImages);
 }
 function normalizeAssignments(assignments) {
   if (!Array.isArray(assignments)) return [];
