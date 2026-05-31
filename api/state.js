@@ -33,7 +33,7 @@ export default async function handler(req, res) {
     await ensureTable(sql);
 
     if (method === "GET") {
-      const rows = await sql`SELECT accounts, assignments, raid_plans, album_images, updated_at FROM raid_sheet_state WHERE sheet_id = ${sheetId}`;
+      const rows = await sql`SELECT accounts, assignments, raid_plans, album_images, memo_notes, updated_at FROM raid_sheet_state WHERE sheet_id = ${sheetId}`;
       const row = rows[0];
 
       sendJson(res, 200, {
@@ -42,6 +42,7 @@ export default async function handler(req, res) {
         assignments: Array.isArray(row?.assignments) ? row.assignments : null,
         raidPlans: Array.isArray(row?.raid_plans) ? row.raid_plans : null,
         albumImages: Array.isArray(row?.album_images) ? row.album_images : null,
+        memoNotes: Array.isArray(row?.memo_notes) ? row.memo_notes : null,
         updatedAt: row?.updated_at ?? null,
       });
       return;
@@ -73,16 +74,18 @@ export default async function handler(req, res) {
     const assignments = Array.isArray(body?.assignments) ? body.assignments : [];
     const raidPlans = Array.isArray(body?.raidPlans) ? body.raidPlans : [];
     const albumImages = Array.isArray(body?.albumImages) ? body.albumImages : [];
+    const memoNotes = Array.isArray(body?.memoNotes) ? body.memoNotes : [];
 
     await sql`
-      INSERT INTO raid_sheet_state (sheet_id, accounts, assignments, raid_plans, album_images, updated_at)
-      VALUES (${sheetId}, ${JSON.stringify(accounts)}::jsonb, ${JSON.stringify(assignments)}::jsonb, ${JSON.stringify(raidPlans)}::jsonb, ${JSON.stringify(albumImages)}::jsonb, NOW())
+      INSERT INTO raid_sheet_state (sheet_id, accounts, assignments, raid_plans, album_images, memo_notes, updated_at)
+      VALUES (${sheetId}, ${JSON.stringify(accounts)}::jsonb, ${JSON.stringify(assignments)}::jsonb, ${JSON.stringify(raidPlans)}::jsonb, ${JSON.stringify(albumImages)}::jsonb, ${JSON.stringify(memoNotes)}::jsonb, NOW())
       ON CONFLICT (sheet_id)
       DO UPDATE SET
         accounts = EXCLUDED.accounts,
         assignments = EXCLUDED.assignments,
         raid_plans = EXCLUDED.raid_plans,
         album_images = EXCLUDED.album_images,
+        memo_notes = EXCLUDED.memo_notes,
         updated_at = NOW()
     `;
 
@@ -105,11 +108,13 @@ async function ensureTable(sql) {
       assignments JSONB NOT NULL DEFAULT '[]'::jsonb,
       raid_plans JSONB NOT NULL DEFAULT '[]'::jsonb,
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      album_images JSONB NOT NULL DEFAULT '[]'::jsonb
+      album_images JSONB NOT NULL DEFAULT '[]'::jsonb,
+      memo_notes JSONB NOT NULL DEFAULT '[]'::jsonb
     )
   `;
   await sql`ALTER TABLE raid_sheet_state ADD COLUMN IF NOT EXISTS raid_plans JSONB NOT NULL DEFAULT '[]'::jsonb`;
   await sql`ALTER TABLE raid_sheet_state ADD COLUMN IF NOT EXISTS album_images JSONB NOT NULL DEFAULT '[]'::jsonb`;
+  await sql`ALTER TABLE raid_sheet_state ADD COLUMN IF NOT EXISTS memo_notes JSONB NOT NULL DEFAULT '[]'::jsonb`;
 }
 
 async function readJsonBody(req) {

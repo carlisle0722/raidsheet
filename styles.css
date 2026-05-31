@@ -1943,3 +1943,95 @@ h3:has(.owner-avatar) {
 
 .album-placeholder { min-height: 220px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
 @media (max-width: 720px) { .album-placeholder { min-height: 160px; } }
+
+.memo-section {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.memo-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.memo-card,
+.memo-empty {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.memo-card {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.memo-card-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.memo-card-header strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.memo-card-header span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.memo-card p {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.9rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.memo-remove-button {
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.memo-empty {
+  margin: 0;
+  padding: 18px;
+  color: var(--muted);
+  font-weight: 850;
+  text-align: center;
+}
+
+.memo-field {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.memo-field input,
+.memo-field textarea {
+  width: 100%;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  padding: 10px 11px;
+  color: var(--ink);
+  font: inherit;
+}
+
+.memo-field textarea {
+  resize: vertical;
+}

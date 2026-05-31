@@ -7,6 +7,7 @@ const storageKeys = {
   assignments: "raidsheet:assignments:v2",
   raidPlans: "raidsheet:raid-plans:v1",
   albumImages: "raidsheet:album-images:v1",
+  memoNotes: "raidsheet:memo-notes:v1",
 };
 
 const names = {
@@ -73,6 +74,7 @@ const state = {
   raidPlans: loadRaidPlans(),
   raidPlanDrafts: [],
   albumImages: loadAlbumImages(),
+  memoNotes: loadMemoNotes(),
   selectedRaidPlanIds: new Set(),
   editingRaidPlanIds: new Set(),
   raidPlanEditBackup: null,
@@ -116,6 +118,7 @@ const elements = {
   raidSideMissingBoard: document.querySelector("#raid-side-missing-board"),
   missingRaidOwnerFilter: document.querySelector("#missing-raid-owner-filter"),
   missingRaidTypeFilter: document.querySelector("#missing-raid-type-filter"),
+  resetMissingFilterButton: document.querySelector("#reset-missing-filter-button"),
   raidPlanHead: document.querySelector("#raid-plan-head"),
   raidPlanBody: document.querySelector("#raid-plan-body"),
   raidPlanSummary: document.querySelector("#raid-plan-summary"),
@@ -123,6 +126,12 @@ const elements = {
   albumUploadInput: document.querySelector("#album-upload-input"),
   addAlbumButton: document.querySelector("#add-album-button"),
   albumCount: document.querySelector("#album-count"),
+  addMemoButton: document.querySelector("#add-memo-button"),
+  memoBoard: document.querySelector("#memo-board"),
+  memoDialog: document.querySelector("#memo-dialog"),
+  memoAuthorInput: document.querySelector("#memo-author-input"),
+  memoContentInput: document.querySelector("#memo-content-input"),
+  saveMemoButton: document.querySelector("#save-memo-button"),
   tabButtons: [...document.querySelectorAll("[data-tab-target]")],
   tabPanels: [...document.querySelectorAll(".tab-panel")],
   ownerCount: document.querySelector("#owner-count"),
@@ -158,6 +167,13 @@ elements.missingRaidTypeFilter?.addEventListener("change", () => {
   state.missingRaidTypeFilter = elements.missingRaidTypeFilter.value;
   renderMissingRaidBoard();
 });
+elements.resetMissingFilterButton?.addEventListener("click", () => {
+  state.missingRaidOwnerFilter = "";
+  state.missingRaidTypeFilter = "";
+  renderMissingRaidBoard();
+});
+elements.addMemoButton?.addEventListener("click", openMemoDialog);
+elements.saveMemoButton?.addEventListener("click", saveMemoFromDialog);
 for (const button of elements.tabButtons) {
   button.addEventListener("click", () => activateTab(button.dataset.tabTarget));
 }
@@ -239,6 +255,7 @@ function renderAll() {
     renderRaidPlanner,
     renderMissingRaidBoard,
     renderAlbumBoard,
+    renderMemoBoard,
   ].forEach((render) => {
     try {
       render();
@@ -454,6 +471,12 @@ function renderMissingRaidOwnerFilter() {
   if (elements.missingRaidTypeFilter) elements.missingRaidTypeFilter.value = state.missingRaidTypeFilter;
 }
 
+function getMissingCompleteMessage() {
+  if (state.missingRaidTypeFilter === "primary") return "필수 레이드가 모두 편성되었습니다.";
+  if (state.missingRaidTypeFilter === "extra") return "추가 레이드가 모두 편성되었습니다.";
+  return "필수/추가 레이드가 모두 편성되었습니다.";
+}
+
 function createMissingOwnerCard(owner) {
   const card = document.createElement("article");
   card.className = "missing-owner-card";
@@ -484,7 +507,7 @@ function createMissingOwnerCard(owner) {
   } else if (!rows.length) {
     const message = document.createElement("p");
     message.className = "missing-empty is-complete";
-    message.textContent = "필수/추가 레이드가 모두 편성됐습니다.";
+    message.textContent = getMissingCompleteMessage();
     body.append(message);
   } else {
     body.append(...rows.map(createMissingCharacterRow));
@@ -508,7 +531,9 @@ function createMissingCharacterRow(data) {
   meta.textContent = character.characterClassName + " · " + character.itemAvgLevel;
   main.append(name, meta);
 
-  row.append(main, createMissingRaidGroup("필수 레이드", missing.primary, "primary"), createMissingRaidGroup("추가 레이드", missing.extra, "extra"));
+  row.append(main);
+  if (state.missingRaidTypeFilter !== "extra") row.append(createMissingRaidGroup("필수 레이드", missing.primary, "primary"));
+  if (state.missingRaidTypeFilter !== "primary") row.append(createMissingRaidGroup("추가 레이드", missing.extra, "extra"));
   return row;
 }
 
@@ -1734,6 +1759,87 @@ function renderAlbumBoard() {
 
   elements.albumBoard.replaceChildren(...cells.slice(0, maxAlbumImages));
 }
+
+function openMemoDialog() {
+  if (!elements.memoDialog) return;
+  if (elements.memoAuthorInput) elements.memoAuthorInput.value = "";
+  if (elements.memoContentInput) elements.memoContentInput.value = "";
+  elements.memoDialog.showModal();
+  elements.memoAuthorInput?.focus();
+}
+
+function saveMemoFromDialog() {
+  const author = elements.memoAuthorInput?.value.trim() ?? "";
+  const content = elements.memoContentInput?.value.trim() ?? "";
+  if (!author || !content) {
+    setStatus("작성자와 메모 내용을 입력해 주세요.", "error");
+    return;
+  }
+
+  state.memoNotes = [
+    {
+      id: createId("memo"),
+      author,
+      content,
+      createdAt: new Date().toISOString(),
+    },
+    ...state.memoNotes,
+  ];
+  saveMemoNotes();
+  saveSheetState();
+  renderMemoBoard();
+  elements.memoDialog?.close();
+  setStatus("메모 등록 완료", "success");
+}
+
+function renderMemoBoard() {
+  if (!elements.memoBoard) return;
+  if (!state.memoNotes.length) {
+    const empty = document.createElement("p");
+    empty.className = "memo-empty";
+    empty.textContent = "등록된 메모가 없습니다.";
+    elements.memoBoard.replaceChildren(empty);
+    return;
+  }
+
+  const notes = state.memoNotes.map((note) => {
+    const card = document.createElement("article");
+    card.className = "memo-card";
+    const header = document.createElement("div");
+    header.className = "memo-card-header";
+    const author = document.createElement("strong");
+    author.textContent = note.author;
+    const time = document.createElement("span");
+    time.textContent = formatMemoDate(note.createdAt);
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "memo-remove-button";
+    remove.setAttribute("aria-label", "메모 삭제");
+    remove.textContent = "×";
+    remove.addEventListener("click", () => removeMemoNote(note.id));
+    header.append(author, time, remove);
+    const content = document.createElement("p");
+    content.textContent = note.content;
+    card.append(header, content);
+    return card;
+  });
+
+  elements.memoBoard.replaceChildren(...notes);
+}
+
+function removeMemoNote(id) {
+  state.memoNotes = state.memoNotes.filter((note) => note.id !== id);
+  saveMemoNotes();
+  saveSheetState();
+  renderMemoBoard();
+}
+
+function formatMemoDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+
 async function addAlbumImages(files) {
   const selectedFiles = [...(files ?? [])].filter((file) => file.type.startsWith("image/"));
   if (!selectedFiles.length) return;
@@ -1794,6 +1900,15 @@ function loadAlbumImages() {
 function saveAlbumImages() {
   writeJson(storageKeys.albumImages, state.albumImages);
 }
+
+function loadMemoNotes() {
+  return normalizeMemoNotes(readJson(storageKeys.memoNotes, []));
+}
+
+function saveMemoNotes() {
+  writeJson(storageKeys.memoNotes, state.memoNotes);
+}
+
 function loadAccounts() {
   const savedAccounts = normalizeAccounts(readJson(storageKeys.accounts, null));
   if (savedAccounts.length) return mergeDefaultAvatars(savedAccounts);
@@ -1831,17 +1946,20 @@ async function loadSheetState() {
     const remoteAssignments = normalizeAssignments(payload.assignments);
     const remoteRaidPlans = normalizeRaidPlans(payload.raidPlans);
     const remoteAlbumImages = normalizeAlbumImages(payload.albumImages);
+    const remoteMemoNotes = normalizeMemoNotes(payload.memoNotes);
     const nextAccounts = remoteAccounts.length ? mergeAccountLists(remoteAccounts, state.accounts) : state.accounts;
     state.accounts = mergeDefaultAvatars(nextAccounts);
     if (Array.isArray(payload.assignments) && (remoteAssignments.length || !state.assignments.length)) state.assignments = remoteAssignments;
     if (Array.isArray(payload.raidPlans) && (remoteRaidPlans.length || !state.raidPlans.length)) state.raidPlans = remoteRaidPlans;
     if (Array.isArray(payload.albumImages) && (remoteAlbumImages.length || !state.albumImages.length)) state.albumImages = remoteAlbumImages;
+    if (Array.isArray(payload.memoNotes) && (remoteMemoNotes.length || !state.memoNotes.length)) state.memoNotes = remoteMemoNotes;
     state.raidPlanDrafts = [];
     state.isRemoteReady = true;
     saveAccounts();
     saveAssignments();
     saveRaidPlans();
     saveAlbumImages();
+    saveMemoNotes();
     renderAll();
     if (!payload.exists) saveSheetState();
   } catch {
@@ -1855,7 +1973,7 @@ async function saveSheetState() {
     const response = await fetch("/api/state", {
       method: "PUT",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ accounts: state.accounts, assignments: state.assignments, raidPlans: state.raidPlans, albumImages: state.albumImages }),
+      body: JSON.stringify({ accounts: state.accounts, assignments: state.assignments, raidPlans: state.raidPlans, albumImages: state.albumImages, memoNotes: state.memoNotes }),
     });
     state.isRemoteReady = response.ok;
     return response.ok;
@@ -1941,6 +2059,22 @@ function normalizeAlbumImages(images) {
     };
   }).filter(Boolean).slice(0, maxAlbumImages);
 }
+
+function normalizeMemoNotes(notes) {
+  if (!Array.isArray(notes)) return [];
+  return notes.map((note, index) => {
+    const author = String(note?.author ?? "").trim();
+    const content = String(note?.content ?? "").trim();
+    if (!author || !content) return null;
+    return {
+      id: String(note?.id ?? `memo-${index}`),
+      author,
+      content,
+      createdAt: String(note?.createdAt ?? new Date().toISOString()),
+    };
+  }).filter(Boolean);
+}
+
 function normalizeAssignments(assignments) {
   if (!Array.isArray(assignments)) return [];
   return assignments.map((assignment) => {
