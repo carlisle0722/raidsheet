@@ -1015,7 +1015,9 @@ h3:has(.owner-avatar) {
   padding: 2px 6px;
   border: 0;
   border-radius: 4px;
+  color: #334155;
   font-size: 0.82rem;
+  font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2010,6 +2012,10 @@ h3:has(.owner-avatar) {
 }
 
 .memo-empty {
+  grid-column: 1 / -1;
+  display: grid;
+  place-items: center;
+  min-height: 92px;
   margin: 0;
   padding: 18px;
   color: var(--muted);
