@@ -82,7 +82,7 @@
               <aside class="raid-missing-pane" aria-labelledby="raid-side-missing-title">
                 <div class="raid-missing-heading">
                   <div><p class="eyebrow">Missing Raid</p><h3 id="raid-side-missing-title">누락 레이드</h3></div>
-                  <label class="missing-filter-label"><span>대상</span><select id="missing-raid-owner-filter" class="missing-filter-select" aria-label="누락 레이드 대상"><option value="">전체</option></select></label>
+                  <div class="missing-filter-row"><label class="missing-filter-label"><span>대상</span><select id="missing-raid-owner-filter" class="missing-filter-select" aria-label="누락 레이드 대상"><option value="">전체</option></select></label><label class="missing-filter-label"><span>구분</span><select id="missing-raid-type-filter" class="missing-filter-select" aria-label="누락 레이드 구분"><option value="">전체</option><option value="primary">필수</option><option value="extra">추가</option></select></label></div>
                 </div>
                 <div id="raid-side-missing-board" class="raid-side-missing-board"></div>
               </aside>
@@ -111,7 +111,7 @@
           <section class="album-section" aria-labelledby="album-title">
             <div class="section-heading">
               <div><p class="eyebrow">Album</p><h2 id="album-title">앨범</h2></div>
-              <div class="album-actions"><strong id="album-count">0/10</strong><input id="album-upload-input" type="file" accept="image/*" multiple hidden /><button id="add-album-button" class="primary-button" type="button">사진 추가</button></div>
+              <div class="album-actions"><strong id="album-count">0/10</strong><input id="album-upload-input" type="file" accept="image/*" multiple hidden /></div>
             </div>
             <div id="album-board" class="album-board"></div>
           </section>

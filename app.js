@@ -77,6 +77,7 @@ const state = {
   draggingRaidPlanId: null,
   raidPlanFilter: null,
   missingRaidOwnerFilter: "",
+  missingRaidTypeFilter: "",
   isLoading: false,
   isRemoteReady: false,
   lastUpdatedAt: null,
@@ -111,6 +112,7 @@ const elements = {
   raidSavedBoard: document.querySelector("#raid-saved-board"),
   raidSideMissingBoard: document.querySelector("#raid-side-missing-board"),
   missingRaidOwnerFilter: document.querySelector("#missing-raid-owner-filter"),
+  missingRaidTypeFilter: document.querySelector("#missing-raid-type-filter"),
   raidPlanHead: document.querySelector("#raid-plan-head"),
   raidPlanBody: document.querySelector("#raid-plan-body"),
   raidPlanSummary: document.querySelector("#raid-plan-summary"),
@@ -213,6 +215,7 @@ function renderAll() {
   renderRosterBoard();
   renderRaidPlanner();
   renderMissingRaidBoard();
+  renderAlbumBoard();
 }
 
 function renderSummary() {
@@ -378,7 +381,7 @@ function renderMissingRaidBoard() {
   renderMissingRaidOwnerFilter();
   const selectedOwner = state.missingRaidOwnerFilter;
   const owners = selectedOwner ? getOwners().filter((owner) => owner === selectedOwner) : getOwners();
-  const cards = owners.map((owner) => createMissingOwnerCard(owner));
+  const cards = owners.map((owner) => createMissingOwnerCard(owner)).filter(Boolean);
   if (elements.raidSideMissingBoard) elements.raidSideMissingBoard.replaceChildren(...cards);
 }
 
@@ -388,6 +391,7 @@ function renderMissingRaidOwnerFilter() {
   elements.missingRaidOwnerFilter.replaceChildren(new Option("전체", ""));
   getOwners().forEach((owner) => elements.missingRaidOwnerFilter.add(new Option(getRaidTableDisplayName(owner), owner, owner === currentValue, owner === currentValue)));
   elements.missingRaidOwnerFilter.value = currentValue;
+  if (elements.missingRaidTypeFilter) elements.missingRaidTypeFilter.value = state.missingRaidTypeFilter;
 }
 
 function createMissingOwnerCard(owner) {
@@ -405,7 +409,9 @@ function createMissingOwnerCard(owner) {
   heading.append(image, title);
 
   const characters = getCharactersForOwner(owner);
-  const rows = characters.map((character) => ({ character, missing: getMissingRaidsForCharacter(character) })).filter((row) => row.missing.primary.length || row.missing.extra.length);
+  const rows = characters
+    .map((character) => ({ character, missing: filterMissingRaidsByType(getMissingRaidsForCharacter(character)) }))
+    .filter((row) => row.missing.primary.length || row.missing.extra.length);
 
   const body = document.createElement("div");
   body.className = "missing-owner-body";
@@ -926,6 +932,7 @@ function addRaidPlanRow() {
   });
   renderRaidPlanner();
   renderMissingRaidBoard();
+  renderAlbumBoard();
 }
 
 
@@ -984,6 +991,7 @@ function removeRaidPlanRow(id) {
   state.raidPlanDrafts = state.raidPlanDrafts.filter((plan) => plan.id !== id);
   renderRaidPlanner();
   renderMissingRaidBoard();
+  renderAlbumBoard();
 }
 
 function updateRaidPlan(id, patch, shouldRender = true) {
@@ -1003,6 +1011,7 @@ function updateRaidPlanCharacter(id, owner, key) {
   });
   renderRaidPlanner();
   renderMissingRaidBoard();
+  renderAlbumBoard();
 }
 
 async function updateSavedRaidPlan(id, patch) {
@@ -1032,6 +1041,7 @@ function updateSavedRaidPlanCharacterLocal(id, owner, key) {
   });
   renderRaidPlanner();
   renderMissingRaidBoard();
+  renderAlbumBoard();
 }
 
 function selectRaidPlanRow(id) {
@@ -1044,6 +1054,7 @@ function selectRaidPlanRow(id) {
   }
   renderRaidPlanner();
   renderMissingRaidBoard();
+  renderAlbumBoard();
 }
 
 function ensureRaidPlanEditBackup() {
@@ -1063,6 +1074,7 @@ function editSelectedRaidPlan() {
   }
   renderRaidPlanner();
   renderMissingRaidBoard();
+  renderAlbumBoard();
 }
 
 function cancelRaidEdits() {
@@ -1073,6 +1085,7 @@ function cancelRaidEdits() {
   state.raidPlanFilter = null;
   renderRaidPlanner();
   renderMissingRaidBoard();
+  renderAlbumBoard();
 }
 
 function cancelRaidDrafts() {
@@ -1080,6 +1093,7 @@ function cancelRaidDrafts() {
   state.raidPlanFilter = null;
   renderRaidPlanner();
   renderMissingRaidBoard();
+  renderAlbumBoard();
 }
 
 function deleteSelectedRaidPlan() {
@@ -1504,13 +1518,14 @@ async function uploadOwnerProfileImage(owner, preview, file) {
     return;
   }
 
+  showSavingOverlay("업로드중...");
   const dataUrl = await readFileAsDataUrl(file);
   preview.src = dataUrl;
   setOwnerAvatarUrl(owner, dataUrl);
   saveAccounts();
   await saveSheetState();
   renderAll();
-  setStatus("프로필 사진이 삽입됐습니다. Blob에 업로드 중...", "loading");
+  setStatus("프로필 사진 업로드중...", "loading");
 
   try {
     const response = await fetch("/api/profile-image", {
@@ -1525,8 +1540,10 @@ async function uploadOwnerProfileImage(owner, preview, file) {
     saveAccounts();
     await saveSheetState();
     renderAll();
+    hideSavingOverlay();
     setStatus("프로필 사진 업로드 완료", "success");
   } catch (error) {
+    hideSavingOverlay();
     setStatus(`${error.message} 현재 선택한 이미지는 화면에 임시로 삽입됐습니다.`, "error");
   }
 }
@@ -1577,19 +1594,26 @@ function createSkeletonRow() {
   return row;
 }
 
+function createAlbumUploadTile() {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "album-upload-tile";
+  button.disabled = state.albumImages.length >= 10;
+  const label = document.createElement("span");
+  label.textContent = state.albumImages.length >= 10 ? "최대 10장" : "사진 추가";
+  button.append(label);
+  button.addEventListener("click", () => elements.albumUploadInput?.click());
+  return button;
+}
+
 function renderAlbumBoard() {
   if (!elements.albumBoard) return;
   if (elements.albumCount) elements.albumCount.textContent = `${state.albumImages.length}/10`;
 
-  if (!state.albumImages.length) {
-    const empty = document.createElement("p");
-    empty.className = "album-empty";
-    empty.textContent = "앨범에 표시할 사진을 추가해 주세요.";
-    elements.albumBoard.replaceChildren(empty);
-    return;
-  }
+  const cells = [];
+  if (state.albumImages.length < 10) cells.push(createAlbumUploadTile());
 
-  elements.albumBoard.replaceChildren(...state.albumImages.map((item) => {
+  cells.push(...state.albumImages.map((item) => {
     const card = document.createElement("article");
     card.className = "album-card";
     const image = document.createElement("img");
@@ -1604,8 +1628,15 @@ function renderAlbumBoard() {
     card.append(image, remove);
     return card;
   }));
-}
 
+  while (cells.length < 10) {
+    const placeholder = document.createElement("div");
+    placeholder.className = "album-placeholder";
+    cells.push(placeholder);
+  }
+
+  elements.albumBoard.replaceChildren(...cells.slice(0, 10));
+}
 async function addAlbumImages(files) {
   const selectedFiles = [...(files ?? [])].filter((file) => file.type.startsWith("image/"));
   if (!selectedFiles.length) return;
@@ -1616,18 +1647,25 @@ async function addAlbumImages(files) {
   }
 
   const nextImages = [];
-  for (const file of selectedFiles.slice(0, slots)) {
+  showSavingOverlay("업로드중...");
+  try {
+    for (const file of selectedFiles.slice(0, slots)) {
     const dataUrl = await readFileAsDataUrl(file);
     const url = await uploadAlbumImage(file, dataUrl);
     nextImages.push({ id: createId("album"), name: file.name, url });
-  }
+    }
 
-  state.albumImages = [...state.albumImages, ...nextImages].slice(0, 10);
-  saveAlbumImages();
-  await saveSheetState();
-  renderAlbumBoard();
-  if (elements.albumUploadInput) elements.albumUploadInput.value = "";
-  setStatus("앨범 사진 추가 완료", "success");
+    state.albumImages = [...state.albumImages, ...nextImages].slice(0, 10);
+    saveAlbumImages();
+    await saveSheetState();
+    renderAlbumBoard();
+    if (elements.albumUploadInput) elements.albumUploadInput.value = "";
+    hideSavingOverlay();
+    setStatus("앨범 사진 추가 완료", "success");
+  } catch (error) {
+    hideSavingOverlay();
+    setStatus(error.message || "앨범 사진 업로드 실패", "error");
+  }
 }
 
 async function uploadAlbumImage(file, dataUrl) {
