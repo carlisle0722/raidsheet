@@ -1,5 +1,6 @@
 const minItemLevel = 1700;
 const maxAlbumImages = 14;
+let missingPaneResizeObserver = null;
 const storageKeys = {
   accounts: "raidsheet:accounts:v4",
   legacyAccounts: "raidsheet:accounts:v3",
@@ -166,8 +167,8 @@ initializeApp();
 
 async function initializeApp() {
   await loadSheetState();
+  initializeMissingPaneHeightSync();
   await loadRosters();
-  window.addEventListener("resize", syncMissingPaneHeight);
 }
 
 async function loadRosters(options = {}) {
@@ -572,6 +573,14 @@ function syncMissingPaneHeight() {
   if (!elements.raidSavedBoard || !elements.raidMissingPane) return;
   const savedHeight = elements.raidSavedBoard.getBoundingClientRect().height;
   if (savedHeight > 0) elements.raidMissingPane.style.height = `${Math.round(savedHeight)}px`;
+}
+
+function initializeMissingPaneHeightSync() {
+  if (!elements.raidSavedBoard || !elements.raidMissingPane || missingPaneResizeObserver) return;
+  missingPaneResizeObserver = new ResizeObserver(() => syncMissingPaneHeight());
+  missingPaneResizeObserver.observe(elements.raidSavedBoard);
+  window.addEventListener("resize", syncMissingPaneHeight);
+  syncMissingPaneHeight();
 }
 
 function renderSavedRaidPlanner(owners) {
