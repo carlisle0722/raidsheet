@@ -1707,24 +1707,26 @@ h3:has(.owner-avatar) {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(280px, 30%);
   gap: 14px;
-  align-items: stretch;
+  align-items: start;
   width: 100%;
   margin-bottom: 14px;
 }
 
 .raid-table-pane {
   display: flex;
+  align-items: flex-start;
   min-width: 0;
 }
 
 .raid-overview-layout .raid-saved-board {
   flex: 1 1 auto;
+  align-self: flex-start;
   margin-bottom: 0;
 }
 
 .raid-missing-pane {
   display: grid;
-  align-self: stretch;
+  align-self: start;
   grid-template-rows: auto minmax(0, 1fr);
   min-width: 280px;
   min-height: 0;

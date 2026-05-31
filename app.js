@@ -571,8 +571,17 @@ function renderRaidPlanner() {
 
 function syncMissingPaneHeight() {
   if (!elements.raidSavedBoard || !elements.raidMissingPane) return;
-  const savedHeight = elements.raidSavedBoard.getBoundingClientRect().height;
-  if (savedHeight > 0) elements.raidMissingPane.style.height = `${Math.round(savedHeight)}px`;
+  const table = elements.raidSavedBoard.querySelector(".raid-saved-table");
+  const target = table ?? elements.raidSavedBoard.firstElementChild ?? elements.raidSavedBoard;
+  const targetHeight = target.getBoundingClientRect().height;
+  const style = getComputedStyle(elements.raidSavedBoard);
+  const chromeHeight =
+    parseFloat(style.paddingTop) +
+    parseFloat(style.paddingBottom) +
+    parseFloat(style.borderTopWidth) +
+    parseFloat(style.borderBottomWidth);
+  const savedHeight = Math.ceil(targetHeight + chromeHeight);
+  if (savedHeight > 0) elements.raidMissingPane.style.height = `${savedHeight}px`;
 }
 
 function initializeMissingPaneHeightSync() {
