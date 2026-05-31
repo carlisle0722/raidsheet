@@ -2008,10 +2008,10 @@ async function loadSheetState() {
     const remoteMemoNotes = normalizeMemoNotes(payload.memoNotes);
     const nextAccounts = remoteAccounts.length ? mergeAccountLists(remoteAccounts, state.accounts) : state.accounts;
     state.accounts = mergeDefaultAvatars(nextAccounts);
-    if (Array.isArray(payload.assignments) && (remoteAssignments.length || !state.assignments.length)) state.assignments = remoteAssignments;
-    if (Array.isArray(payload.raidPlans) && (remoteRaidPlans.length || !state.raidPlans.length)) state.raidPlans = remoteRaidPlans;
-    if (Array.isArray(payload.albumImages) && (remoteAlbumImages.length || !state.albumImages.length)) state.albumImages = remoteAlbumImages;
-    if (Array.isArray(payload.memoNotes) && (remoteMemoNotes.length || !state.memoNotes.length)) state.memoNotes = remoteMemoNotes;
+    if (Array.isArray(payload.assignments)) state.assignments = remoteAssignments;
+    if (Array.isArray(payload.raidPlans)) state.raidPlans = remoteRaidPlans;
+    if (Array.isArray(payload.albumImages)) state.albumImages = remoteAlbumImages;
+    if (Array.isArray(payload.memoNotes)) state.memoNotes = remoteMemoNotes;
     state.raidPlanDrafts = [];
     state.isRemoteReady = true;
     saveAccounts();
