@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>레이드 시트</title>
-    <link rel="stylesheet" href="/styles.css?v=20260531-11" />
+    <link rel="stylesheet" href="/styles.css?v=20260531-12" />
   </head>
   <body>
     <main class="app-shell">
@@ -82,7 +82,7 @@
               <aside class="raid-missing-pane" aria-labelledby="raid-side-missing-title">
                 <div class="raid-missing-heading">
                   <div><p class="eyebrow">Missing Raid</p><h3 id="raid-side-missing-title">누락 레이드</h3></div>
-                  <div class="missing-filter-row"><label class="missing-filter-label"><span>대상</span><select id="missing-raid-owner-filter" class="missing-filter-select" aria-label="누락 레이드 대상"><option value="">전체</option></select></label><label class="missing-filter-label"><span>구분</span><select id="missing-raid-type-filter" class="missing-filter-select" aria-label="누락 레이드 구분"><option value="">전체</option><option value="primary">필수</option><option value="extra">추가</option></select></label><button id="reset-missing-filter-button" class="small-button" type="button">취소</button></div>
+                  <div class="missing-filter-row"><label class="missing-filter-label"><span>대상</span><select id="missing-raid-owner-filter" class="missing-filter-select" aria-label="누락 레이드 대상"><option value="">전체</option></select></label><label class="missing-filter-label"><span>구분</span><select id="missing-raid-type-filter" class="missing-filter-select" aria-label="누락 레이드 구분"><option value="">전체</option><option value="primary">필수</option><option value="extra">추가</option></select></label><button id="reset-missing-filter-button" class="missing-filter-reset" type="button" aria-label="누락 레이드 필터 초기화">×</button></div>
                 </div>
                 <div id="raid-side-missing-board" class="raid-side-missing-board"></div>
               </aside>
@@ -161,6 +161,6 @@
     <template id="owner-column-template"><article class="owner-column"><div class="owner-heading"><h3></h3><strong class="owner-count">0</strong></div><div class="assignment-list"></div></article></template>
     <template id="source-column-template"><article class="source-column"><div class="source-heading"><div><h3></h3><span class="source-meta"></span></div><strong class="source-count">0</strong></div><div class="character-list"></div></article></template>
     <template id="character-card-template"><div class="character-card"><div class="character-main"><strong class="character-name"></strong><span class="class-name"></span></div><div class="character-meta"><span class="source-owner"></span><strong class="item-level"></strong></div><div class="character-actions"></div></div></template>
-    <script src="/app.js?v=20260531-11" type="module"></script>
+    <script src="/app.js?v=20260531-12" type="module"></script>
   </body>
 </html>

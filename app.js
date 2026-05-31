@@ -1,5 +1,6 @@
 const minItemLevel = 1700;
 const maxAlbumImages = 14;
+const albumGridSlots = maxAlbumImages + 1;
 let missingPaneResizeObserver = null;
 const storageKeys = {
   accounts: "raidsheet:accounts:v4",
@@ -1732,8 +1733,7 @@ function renderAlbumBoard() {
   if (!elements.albumBoard) return;
   if (elements.albumCount) elements.albumCount.textContent = `${state.albumImages.length}/${maxAlbumImages}`;
 
-  const cells = [];
-  if (state.albumImages.length < maxAlbumImages) cells.push(createAlbumUploadTile());
+  const cells = [createAlbumUploadTile()];
 
   cells.push(...state.albumImages.map((item) => {
     const card = document.createElement("article");
@@ -1751,13 +1751,13 @@ function renderAlbumBoard() {
     return card;
   }));
 
-  while (cells.length < maxAlbumImages) {
+  while (cells.length < albumGridSlots) {
     const placeholder = document.createElement("div");
     placeholder.className = "album-placeholder";
     cells.push(placeholder);
   }
 
-  elements.albumBoard.replaceChildren(...cells.slice(0, maxAlbumImages));
+  elements.albumBoard.replaceChildren(...cells.slice(0, albumGridSlots));
 }
 
 function openMemoDialog() {

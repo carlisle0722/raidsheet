@@ -1931,17 +1931,20 @@ h3:has(.owner-avatar) {
 .album-remove-button { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; border: 1px solid rgba(255,255,255,0.7); border-radius: 999px; color: #fff; background: rgba(25,29,36,0.55); font-size: 1rem; font-weight: 900; }
 .album-empty { padding: 42px 16px; border: 1px dashed var(--line-strong); border-radius: 8px; color: var(--muted); background: var(--surface-soft); font-weight: 800; text-align: center; }
 
-.missing-filter-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
-.missing-filter-row .missing-filter-select { min-width: 78px; }
+.missing-filter-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.missing-filter-row .missing-filter-label { gap: 4px; font-size: 0.68rem; }
+.missing-filter-row .missing-filter-select { min-width: 70px; height: 26px; padding: 0 6px; font-size: 0.72rem; }
+.missing-filter-reset { display: inline-grid; place-items: center; width: 26px; height: 26px; border: 1px solid var(--line-strong); border-radius: 6px; color: var(--muted); background: #fff; font-size: 1rem; font-weight: 900; line-height: 1; cursor: pointer; }
+.missing-filter-reset:hover { color: var(--accent-strong); border-color: rgba(47, 111, 106, 0.45); background: rgba(47, 111, 106, 0.055); }
 .raid-overview-layout .raid-saved-board { overflow: visible; }
 .album-board { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; }
-.album-card, .album-upload-tile { min-height: 220px; }
+.album-card, .album-upload-tile, .album-placeholder { aspect-ratio: 1 / 1; min-height: 0; }
 .album-upload-tile { display: grid; place-items: center; border: 1px dashed var(--line-strong); border-radius: 8px; color: var(--muted); background: var(--surface-soft); font-weight: 900; cursor: pointer; }
 .album-upload-tile::before { content: "📷"; display: block; font-size: 2.2rem; line-height: 1; margin-bottom: 8px; text-align: center; }
 .album-upload-tile span { display: block; text-align: center; }
 @media (max-width: 720px) { .album-board { grid-template-columns: repeat(2, minmax(0, 1fr)); } .album-card, .album-upload-tile { min-height: 160px; } }
 
-.album-placeholder { min-height: 220px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+.album-placeholder { border: 1px solid var(--line); border-radius: 8px; background: #fff; }
 @media (max-width: 720px) { .album-placeholder { min-height: 160px; } }
 
 .memo-section {
@@ -1952,7 +1955,7 @@ h3:has(.owner-avatar) {
 
 .memo-board {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -2034,4 +2037,16 @@ h3:has(.owner-avatar) {
 
 .memo-field textarea {
   resize: vertical;
+}
+
+@media (max-width: 900px) {
+  .memo-board {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .memo-board {
+    grid-template-columns: 1fr;
+  }
 }
