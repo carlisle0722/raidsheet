@@ -127,6 +127,9 @@ const elements = {
   albumUploadInput: document.querySelector("#album-upload-input"),
   addAlbumButton: document.querySelector("#add-album-button"),
   albumCount: document.querySelector("#album-count"),
+  albumPreviewDialog: document.querySelector("#album-preview-dialog"),
+  albumPreviewImage: document.querySelector("#album-preview-image"),
+  albumPreviewCloseButton: document.querySelector("#album-preview-close-button"),
   addMemoButton: document.querySelector("#add-memo-button"),
   memoBoard: document.querySelector("#memo-board"),
   memoDialog: document.querySelector("#memo-dialog"),
@@ -151,8 +154,18 @@ elements.editAccountsButton.addEventListener("click", openAccountEditor);
 elements.openRosterButton.addEventListener("click", openRosterDialog);
 elements.addAccountButton.addEventListener("click", addAccountEditorRow);
 elements.saveAccountsButton.addEventListener("click", saveAccountEditor);
-elements.addAlbumButton?.addEventListener("click", () => elements.albumUploadInput?.click());
+elements.addAlbumButton?.addEventListener("click", () => {
+  if (state.albumImages.length >= maxAlbumImages) {
+    showAlbumLimitAlert();
+    return;
+  }
+  elements.albumUploadInput?.click();
+});
 elements.albumUploadInput?.addEventListener("change", (event) => addAlbumImages(event.target.files));
+elements.albumPreviewCloseButton?.addEventListener("click", () => elements.albumPreviewDialog?.close());
+elements.albumPreviewDialog?.addEventListener("click", (event) => {
+  if (event.target === elements.albumPreviewDialog) elements.albumPreviewDialog.close();
+});
 elements.addRaidRowButton.addEventListener("click", addRaidPlanRow);
 elements.saveRaidPlanButton.addEventListener("click", saveSavedRaidPlanChanges);
 elements.saveRaidPlanBottomButton.addEventListener("click", saveRaidDraftChanges);
@@ -903,9 +916,9 @@ function createSavedRaidOwnerTableCell(plan, owner) {
 
   const status = getRaidPlanCellStatus(plan, character, state.raidPlans);
   cell.dataset.tier = getLevelTier(character.itemLevelNumber);
-    cell.classList.toggle("is-extra-raid", status.isExtra);
-    cell.classList.toggle("is-excluded-raid", status.isExcluded);
-    cell.classList.toggle("is-duplicate-raid", status.isDuplicate);
+  cell.classList.toggle("is-extra-raid", status.isExtra);
+  cell.classList.toggle("is-excluded-raid", status.isExcluded);
+  cell.classList.toggle("is-duplicate-raid", status.isDuplicate);
   cell.title = `${character.characterName} · ${character.itemAvgLevel}`;
 
   const name = document.createElement("span");
@@ -922,9 +935,9 @@ function createRaidOwnerCell(plan, owner, scope = "draft") {
   if (character) {
     const status = getRaidPlanCellStatus(plan, character, scope === "saved" ? state.raidPlans : state.raidPlanDrafts);
     cell.dataset.tier = getLevelTier(character.itemLevelNumber);
-  cell.classList.toggle("is-extra-raid", status.isExtra);
-  cell.classList.toggle("is-excluded-raid", status.isExcluded);
-  cell.classList.toggle("is-duplicate-raid", status.isDuplicate);
+    cell.classList.toggle("is-extra-raid", status.isExtra);
+    cell.classList.toggle("is-excluded-raid", status.isExcluded);
+    cell.classList.toggle("is-duplicate-raid", status.isDuplicate);
     cell.classList.toggle("has-duplicate-option", getRaidCharacterOptionStatus(plan, character, scope === "saved" ? state.raidPlans : [...state.raidPlans, ...state.raidPlanDrafts]).isDuplicate);
   }
   const select = document.createElement("select");
@@ -1201,16 +1214,11 @@ function cancelRaidEdits() {
   state.raidPlanEditBackup = null;
   state.raidPlanFilter = null;
   renderRaidPlanner();
-  renderMissingRaidBoard();
-  renderAlbumBoard();
 }
 
 function cancelRaidDrafts() {
   state.raidPlanDrafts = [];
-  state.raidPlanFilter = null;
   renderRaidPlanner();
-  renderMissingRaidBoard();
-  renderAlbumBoard();
 }
 
 function deleteSelectedRaidPlan() {
@@ -1505,18 +1513,50 @@ function canJoinRaid(character, raidName) {
 }
 
 function getRaidTier(raidName) {
-  return raidCatalog.find((raid) => raid.name === raidName)?.tier ?? "base";
+  const normalizedRaidName = normalizeRaidNameForColor(raidName);
+  return raidCatalog.find((raid) => raid.name === normalizedRaidName)?.tier ?? "base";
 }
 
 function getRaidColorIndex(raidName) {
-  const catalogIndex = raidCatalog.findIndex((raid) => raid.name === raidName);
+  const normalizedRaidName = normalizeRaidNameForColor(raidName);
+  const catalogIndex = raidCatalog.findIndex((raid) => raid.name === normalizedRaidName);
   if (catalogIndex >= 0) return (catalogIndex % 18) + 1;
-  const source = String(raidName || "");
+  const source = String(normalizedRaidName || "");
   let hash = 0;
   for (let index = 0; index < source.length; index += 1) {
     hash = (hash * 31 + source.charCodeAt(index)) % 997;
   }
   return (hash % 18) + 1;
+}
+
+function normalizeRaidNameForColor(raidName) {
+  const source = String(raidName || "").trim();
+  const compact = source.replace(/\s+/g, "");
+  const aliasMap = new Map([
+    ["4노", "4막 노말"],
+    ["4막노말", "4막 노말"],
+    ["4하", "4막 하드"],
+    ["4막하드", "4막 하드"],
+    ["3하", "3막 하드"],
+    ["3막하드", "3막 하드"],
+    ["종노", "종막 노말"],
+    ["종막노말", "종막 노말"],
+    ["종하", "종막 하드"],
+    ["종막하드", "종막 하드"],
+    ["세노", "세르카 노말"],
+    ["세르카노말", "세르카 노말"],
+    ["세하", "세르카 하드"],
+    ["세르카하드", "세르카 하드"],
+    ["세나", "세르카 나메"],
+    ["세르카나메", "세르카 나메"],
+    ["성당1", "성당 1단계"],
+    ["성당1단계", "성당 1단계"],
+    ["성당2", "성당 2단계"],
+    ["성당2단계", "성당 2단계"],
+    ["성당3", "성당 3단계"],
+    ["성당3단계", "성당 3단계"],
+  ]);
+  return aliasMap.get(compact) ?? source;
 }
 
 function getRaidPlanRows(raidPlans = state.raidPlanDrafts) {
@@ -1730,11 +1770,16 @@ function createAlbumUploadTile() {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "album-upload-tile";
-  button.disabled = state.albumImages.length >= maxAlbumImages;
   const label = document.createElement("span");
   label.textContent = state.albumImages.length >= maxAlbumImages ? `최대 ${maxAlbumImages}장` : "사진 추가";
   button.append(label);
-  button.addEventListener("click", () => elements.albumUploadInput?.click());
+  button.addEventListener("click", () => {
+    if (state.albumImages.length >= maxAlbumImages) {
+      showAlbumLimitAlert();
+      return;
+    }
+    elements.albumUploadInput?.click();
+  });
   return button;
 }
 
@@ -1749,13 +1794,17 @@ function renderAlbumBoard() {
     card.className = "album-card";
     const image = document.createElement("img");
     image.src = item.url;
+    card.addEventListener("click", () => openAlbumPreview(item));
     image.alt = item.name || "앨범 사진";
     const remove = document.createElement("button");
     remove.type = "button";
     remove.className = "album-remove-button";
     remove.setAttribute("aria-label", "앨범 사진 삭제");
     remove.textContent = "×";
-    remove.addEventListener("click", () => removeAlbumImage(item.id));
+    remove.addEventListener("click", (event) => {
+      event.stopPropagation();
+      removeAlbumImage(item.id);
+    });
     card.append(image, remove);
     return card;
   }));
@@ -1767,6 +1816,17 @@ function renderAlbumBoard() {
   }
 
   elements.albumBoard.replaceChildren(...cells.slice(0, albumGridSlots));
+}
+
+function openAlbumPreview(item) {
+  if (!elements.albumPreviewDialog || !elements.albumPreviewImage) return;
+  elements.albumPreviewImage.src = item.url;
+  elements.albumPreviewImage.alt = item.name || "앨범 사진";
+  elements.albumPreviewDialog.showModal();
+}
+
+function showAlbumLimitAlert() {
+  alert(`앨범은 최대 ${maxAlbumImages}장까지만 등록할 수 있습니다. 삭제 후 다시 등록해 주세요.`);
 }
 
 function openMemoDialog() {
@@ -1890,18 +1950,19 @@ async function addAlbumImages(files) {
   const selectedFiles = [...(files ?? [])].filter((file) => file.type.startsWith("image/"));
   if (!selectedFiles.length) return;
   const slots = Math.max(0, maxAlbumImages - state.albumImages.length);
-  if (!slots) {
-    setStatus(`앨범은 최대 ${maxAlbumImages}장까지 추가할 수 있습니다.`, "error");
+  if (!slots || selectedFiles.length > slots) {
+    showAlbumLimitAlert();
+    if (elements.albumUploadInput) elements.albumUploadInput.value = "";
     return;
   }
 
   const nextImages = [];
   showSavingOverlay("업로드중...");
   try {
-    for (const file of selectedFiles.slice(0, slots)) {
-    const dataUrl = await readFileAsDataUrl(file);
-    const url = await uploadAlbumImage(file, dataUrl);
-    nextImages.push({ id: createId("album"), name: file.name, url });
+    for (const file of selectedFiles) {
+      const dataUrl = await readFileAsDataUrl(file);
+      const url = await uploadAlbumImage(file, dataUrl);
+      nextImages.push({ id: createId("album"), name: file.name, url });
     }
 
     state.albumImages = [...state.albumImages, ...nextImages].slice(0, maxAlbumImages);
