@@ -28,6 +28,9 @@ const mimeTypes = {
   ".jpeg": "image/jpeg",
   ".webp": "image/webp",
   ".gif": "image/gif",
+  ".pdf": "application/pdf",
+  ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  ".txt": "text/plain; charset=utf-8",
 };
 
 const server = createServer(async (req, res) => {

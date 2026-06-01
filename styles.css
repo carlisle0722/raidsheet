@@ -38,7 +38,8 @@ body {
 
 button,
 input,
-select {
+select,
+a {
   font: inherit;
 }
 
@@ -136,6 +137,13 @@ h3:has(.owner-avatar) {
   border: 1px solid var(--line);
   color: var(--ink);
   background: var(--surface);
+}
+
+.manual-download-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
 }
 
 .secondary-button.danger {
