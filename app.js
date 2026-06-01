@@ -2,6 +2,7 @@ const minItemLevel = 1700;
 const maxAlbumImages = 14;
 const albumGridSlots = maxAlbumImages + 1;
 let missingPaneResizeObserver = null;
+let auctionPartySize = 8;
 const storageKeys = {
   accounts: "raidsheet:accounts:v4",
   legacyAccounts: "raidsheet:accounts:v3",
@@ -130,6 +131,14 @@ const elements = {
   albumPreviewDialog: document.querySelector("#album-preview-dialog"),
   albumPreviewImage: document.querySelector("#album-preview-image"),
   albumPreviewCloseButton: document.querySelector("#album-preview-close-button"),
+  auctionCalculatorButton: document.querySelector("#auction-calculator-button"),
+  auctionCalculatorDialog: document.querySelector("#auction-calculator-dialog"),
+  auctionCloseButton: document.querySelector("#auction-close-button"),
+  auctionPriceInput: document.querySelector("#auction-price-input"),
+  auctionPartyInput: document.querySelector("#auction-party-input"),
+  auctionPartyButtons: [...document.querySelectorAll("[data-party-size]")],
+  auctionResultTable: document.querySelector("#auction-result-table"),
+  auctionCopyHint: document.querySelector("#auction-copy-hint"),
   addMemoButton: document.querySelector("#add-memo-button"),
   memoBoard: document.querySelector("#memo-board"),
   memoDialog: document.querySelector("#memo-dialog"),
@@ -166,6 +175,23 @@ elements.albumPreviewCloseButton?.addEventListener("click", () => elements.album
 elements.albumPreviewDialog?.addEventListener("click", (event) => {
   if (event.target === elements.albumPreviewDialog) elements.albumPreviewDialog.close();
 });
+elements.auctionCalculatorButton?.addEventListener("click", openAuctionCalculator);
+elements.auctionCloseButton?.addEventListener("click", () => elements.auctionCalculatorDialog?.close());
+elements.auctionPriceInput?.addEventListener("input", renderAuctionCalculator);
+elements.auctionPartyInput?.addEventListener("input", () => {
+  const value = Number.parseInt(elements.auctionPartyInput.value, 10);
+  if (Number.isFinite(value) && value >= 2) auctionPartySize = value;
+  updateAuctionPartyButtons();
+  renderAuctionCalculator();
+});
+for (const button of elements.auctionPartyButtons) {
+  button.addEventListener("click", () => {
+    auctionPartySize = Number.parseInt(button.dataset.partySize, 10);
+    if (elements.auctionPartyInput) elements.auctionPartyInput.value = "";
+    updateAuctionPartyButtons();
+    renderAuctionCalculator();
+  });
+}
 elements.addRaidRowButton.addEventListener("click", addRaidPlanRow);
 elements.saveRaidPlanButton.addEventListener("click", saveSavedRaidPlanChanges);
 elements.saveRaidPlanBottomButton.addEventListener("click", saveRaidDraftChanges);
@@ -1827,6 +1853,71 @@ function openAlbumPreview(item) {
 
 function showAlbumLimitAlert() {
   alert(`앨범은 최대 ${maxAlbumImages}장까지만 등록할 수 있습니다. 삭제 후 다시 등록해 주세요.`);
+}
+
+function openAuctionCalculator() {
+  if (!elements.auctionCalculatorDialog) return;
+  updateAuctionPartyButtons();
+  renderAuctionCalculator();
+  elements.auctionCalculatorDialog.showModal();
+  elements.auctionPriceInput?.focus();
+  elements.auctionPriceInput?.select();
+}
+
+function updateAuctionPartyButtons() {
+  for (const button of elements.auctionPartyButtons) {
+    const partySize = Number.parseInt(button.dataset.partySize, 10);
+    button.classList.toggle("is-active", partySize === auctionPartySize && !elements.auctionPartyInput?.value);
+  }
+}
+
+function renderAuctionCalculator() {
+  if (!elements.auctionResultTable) return;
+  const price = Math.max(0, Number.parseInt(elements.auctionPriceInput?.value || "0", 10) || 0);
+  const partySize = Math.max(2, auctionPartySize || 8);
+  const directBid = Math.floor(price * ((partySize - 1) / partySize));
+  const breakEvenBid = Math.floor(price * 0.95 * ((partySize - 1) / partySize));
+  const rows = [
+    { label: "직접 사용", bid: directBid, profit: Math.floor(price / partySize) },
+    { label: "손익 분기점", bid: breakEvenBid, profit: 0 },
+    { label: "25%", bid: Math.floor(breakEvenBid * 0.9758), profit: 0 },
+    { label: "50%", bid: Math.floor(breakEvenBid * 0.9525), profit: 0 },
+    { label: "75%", bid: Math.floor(breakEvenBid * 0.9303), profit: 0 },
+    { label: "선점", bid: Math.floor(breakEvenBid * 0.9092), profit: 0 },
+  ].map((row) => ({ ...row, profit: row.profit || Math.max(0, breakEvenBid - row.bid) }));
+
+  const header = document.createElement("div");
+  header.className = "auction-result-row auction-result-head";
+  header.innerHTML = "<span>손익</span><span>/</span><span>입찰가</span>";
+
+  const bodyRows = rows.map((row) => {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "auction-result-row";
+    item.dataset.bid = String(row.bid);
+    item.innerHTML = `
+      <span>${formatAuctionGold(row.profit)}</span>
+      <strong>${row.label}</strong>
+      <span>${formatAuctionGold(row.bid)}</span>
+    `;
+    item.addEventListener("click", () => copyAuctionBid(row.bid));
+    return item;
+  });
+
+  elements.auctionResultTable.replaceChildren(header, ...bodyRows);
+}
+
+function formatAuctionGold(value) {
+  return `${Math.max(0, Math.floor(value)).toLocaleString("ko-KR")} 🪙`;
+}
+
+async function copyAuctionBid(value) {
+  try {
+    await navigator.clipboard?.writeText(String(value));
+    if (elements.auctionCopyHint) elements.auctionCopyHint.textContent = `${value.toLocaleString("ko-KR")} 복사 완료`;
+  } catch {
+    if (elements.auctionCopyHint) elements.auctionCopyHint.textContent = "복사할 수 없습니다";
+  }
 }
 
 function openMemoDialog() {

@@ -71,6 +71,7 @@
                   <button id="edit-raid-row-button" class="secondary-button" type="button" disabled>수정</button>
                   <button id="delete-raid-row-button" class="secondary-button danger" type="button" disabled>삭제</button>
                   <button id="cancel-raid-edit-button" class="secondary-button" type="button">취소</button>
+                  <button id="auction-calculator-button" class="secondary-button" type="button">경매계산기</button>
                   <button id="save-raid-plan-button" class="primary-button" type="button">편성 저장</button>
                 </div>
               </div>
@@ -133,6 +134,30 @@
     <dialog id="album-preview-dialog" class="album-preview-dialog">
       <button id="album-preview-close-button" class="album-preview-close-button" type="button" aria-label="닫기">×</button>
       <img id="album-preview-image" alt="앨범 사진" />
+    </dialog>
+
+    <dialog id="auction-calculator-dialog" class="auction-calculator-dialog">
+      <form method="dialog" class="auction-calculator-panel">
+        <div class="auction-calculator-heading">
+          <h2>경매계산기</h2>
+          <button id="auction-close-button" class="auction-close-button" type="button" aria-label="닫기">×</button>
+        </div>
+        <label class="auction-price-field">
+          <span>아이템 가격</span>
+          <input id="auction-price-input" type="number" min="0" step="1" value="0" inputmode="numeric" />
+        </label>
+        <div class="auction-party-row" role="group" aria-label="파티수">
+          <button class="auction-party-button" type="button" data-party-size="4">4인</button>
+          <button class="auction-party-button is-active" type="button" data-party-size="8">8인</button>
+          <button class="auction-party-button" type="button" data-party-size="16">16인</button>
+          <label class="auction-custom-field">
+            <span>직접 입력</span>
+            <input id="auction-party-input" type="number" min="2" step="1" inputmode="numeric" />
+          </label>
+        </div>
+        <div class="auction-result-table" id="auction-result-table" aria-live="polite"></div>
+        <p id="auction-copy-hint" class="auction-copy-hint">클릭시 입찰가 복사</p>
+      </form>
     </dialog>
 
     <dialog id="accounts-dialog" class="accounts-dialog">
