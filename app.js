@@ -1875,10 +1875,8 @@ function renderAuctionCalculator() {
   if (!elements.auctionResultTable) return;
   const price = Math.max(0, Number.parseInt(elements.auctionPriceInput?.value || "0", 10) || 0);
   const partySize = Math.max(2, auctionPartySize || 8);
-  const directBid = Math.floor(price * ((partySize - 1) / partySize));
   const breakEvenBid = Math.floor(price * 0.95 * ((partySize - 1) / partySize));
   const rows = [
-    { label: "직접 사용", bid: directBid, profit: Math.floor(price / partySize) },
     { label: "손익 분기점", bid: breakEvenBid, profit: 0 },
     { label: "25%", bid: Math.floor(breakEvenBid * 0.9758), profit: 0 },
     { label: "50%", bid: Math.floor(breakEvenBid * 0.9525), profit: 0 },
