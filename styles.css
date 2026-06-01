@@ -2213,6 +2213,10 @@ h3:has(.owner-avatar) {
   text-align: center;
 }
 
+.auction-result-row span {
+  font-variant-numeric: tabular-nums;
+}
+
 .auction-result-row:last-child {
   border-bottom: 0;
 }

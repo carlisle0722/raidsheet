@@ -234,7 +234,7 @@ function renderAuctionCalculator() {
 }
 
 function formatAuctionGold(value) {
-  return `${Math.max(0, Math.floor(value)).toLocaleString("ko-KR")} 🪙`;
+  return `${Math.max(0, Math.floor(value)).toLocaleString("ko-KR")} G`;
 }
 
 async function copyAuctionBid(value) {
