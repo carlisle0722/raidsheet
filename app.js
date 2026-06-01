@@ -1,3 +1,4 @@
+// 상수, 상태, DOM 요소, 이벤트 연결, 초기 로딩
 const minItemLevel = 1700;
 const maxAlbumImages = 14;
 const albumGridSlots = maxAlbumImages + 1;
@@ -287,6 +288,7 @@ async function fetchAccountRoster(account, options = {}) {
   }
 }
 
+// 기본 렌더링, 보유 캐릭터 탭, 캐릭터 조회/편성 목록
 function renderAll() {
   [
     renderSummary,
@@ -465,6 +467,7 @@ function renderAssignedRosterBoard() {
   elements.assignedRosterBoard.replaceChildren(...columns);
 }
 
+// 누락 레이드 사이드 패널과 누락 레이드 필터
 function renderMissingRaidBoard() {
   renderMissingRaidOwnerFilter();
   const selectedOwner = state.missingRaidOwnerFilter;
@@ -627,6 +630,8 @@ function getPlannedRaidsForCharacter(characterKey) {
   }
   return planned;
 }
+
+// 레이드 편성 표, 편집/저장/필터/순서 변경
 function renderRaidPlanner() {
   const owners = getOwners();
   renderSavedRaidPlanner(owners);
@@ -1671,6 +1676,8 @@ function getRaidTableDisplayName(name) {
   };
   return names[name] ?? name;
 }
+
+// 공용 조회 헬퍼, 프로필 이미지, 앨범, 경매계산기, 메모
 function getOwners() {
   return [...new Set(state.accounts.map((account) => account.owner).filter(Boolean))];
 }
@@ -2146,6 +2153,7 @@ function saveRaidPlans() {
   writeJson(storageKeys.raidPlans, state.raidPlans);
 }
 
+// 원격/로컬 저장소, 정규화, 공용 유틸리티
 async function loadSheetState() {
   try {
     const response = await fetch("/api/state");

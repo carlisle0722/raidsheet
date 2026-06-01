@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build:app": "powershell -ExecutionPolicy Bypass -File scripts/build-app.ps1",
     "start": "node server.js",
     "dev": "node server.js"
   },
