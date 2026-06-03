@@ -342,10 +342,13 @@ function createRaidOwnerCell(plan, owner, scope = "draft") {
   select.className = "raid-character-select";
   select.add(new Option("", ""));
   const raidPlans = scope === "saved" ? state.raidPlans : [...state.raidPlans, ...state.raidPlanDrafts];
-  for (const character of getCharactersForOwner(owner).filter((item) => canJoinRaid(item, plan.raidName))) {
+  const selectedCharacterKey = plan.characters?.[owner] ?? "";
+  const selectableCharacters = getCharactersForOwner(owner).filter((item) => canJoinRaid(item, plan.raidName) || item.key === selectedCharacterKey);
+  for (const character of selectableCharacters) {
     const option = new Option(getRaidTableDisplayName(character.characterName), character.key, character.key === plan.characters?.[owner], character.key === plan.characters?.[owner]);
     const optionStatus = getRaidCharacterOptionStatus(plan, character, raidPlans);
-    if (optionStatus.isDuplicate) {
+    const cellStatus = getRaidPlanCellStatus({ ...plan, characters: { ...(plan.characters ?? {}), [owner]: character.key } }, character, raidPlans);
+    if (optionStatus.isDuplicate || cellStatus.isExcluded) {
       option.className = "is-duplicate-option";
       option.style.color = "var(--danger)";
     } else if (optionStatus.isExtra) {
@@ -465,7 +468,7 @@ function addRaidPlanRow() {
 
 
 async function saveSavedRaidPlanChanges() {
-  if (!validateRaidPlans(state.raidPlans)) return;
+  state.raidPlans = removeEmptyRaidPlans(state.raidPlans);
   saveRaidPlans();
   elements.saveRaidPlanButton.disabled = true;
   showSavingOverlay("편성 저장중...");
@@ -509,6 +512,14 @@ function validateRaidPlans(raidPlans) {
   }
 
   return true;
+}
+
+function removeEmptyRaidPlans(raidPlans) {
+  return getRaidPlanRows(raidPlans).filter((plan) => {
+    const hasRaidName = Boolean(plan.raidName?.trim());
+    const hasCharacter = Object.values(plan.characters ?? {}).some(Boolean);
+    return hasRaidName || hasCharacter;
+  });
 }
 
 function validateRaidPlanDrafts() {
