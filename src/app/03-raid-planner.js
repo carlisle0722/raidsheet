@@ -273,13 +273,13 @@ function createSavedRaidPlanRow(plan, owners) {
   completed.checked = Boolean(plan.completed);
   completed.setAttribute("aria-label", `${plan.raidName || "레이드"} 완료`);
   completed.addEventListener("click", (event) => event.stopPropagation());
-  completed.addEventListener("change", () => updateSavedRaidPlanLocal(plan.id, { completed: completed.checked }));
+  completed.addEventListener("change", () => updateSavedRaidPlanCompleted(plan.id, completed.checked));
   completedCell.append(completed);
   completedCell.addEventListener("click", (event) => {
     event.stopPropagation();
     if (event.target === completed) return;
     completed.checked = !completed.checked;
-    updateSavedRaidPlanLocal(plan.id, { completed: completed.checked });
+    updateSavedRaidPlanCompleted(plan.id, completed.checked);
   });
 
   const raidCell = document.createElement("td");
@@ -561,6 +561,15 @@ function updateSavedRaidPlanLocal(id, patch, shouldRender = true) {
   }
 }
 
+async function updateSavedRaidPlanCompleted(id, completed) {
+  state.raidPlans = getRaidPlanRows(state.raidPlans).map((plan) => (plan.id === id ? { ...plan, completed } : plan));
+  saveRaidPlans();
+  renderRaidPlanner();
+  renderMissingRaidBoard();
+  const ok = await saveRaidPlansState();
+  if (!ok) setStatus("완료 체크 저장에 실패했습니다.", "error");
+}
+
 function updateSavedRaidPlanCharacterLocal(id, owner, key) {
   ensureRaidPlanEditBackup();
   state.raidPlans = getRaidPlanRows(state.raidPlans).map((plan) => {
@@ -738,6 +747,23 @@ function pruneAssignments() {
   const previousLength = state.assignments.length;
   state.assignments = state.assignments.filter((assignment) => knownKeys.has(assignment.key));
   if (state.assignments.length !== previousLength) saveAssignments();
+}
+
+function syncAssignmentsWithLatestRoster() {
+  const charactersByKey = new Map(getAllCharacters().map((character) => [character.key, character]));
+  let changed = false;
+  state.assignments = state.assignments.map((assignment) => {
+    const latestCharacter = charactersByKey.get(assignment.key);
+    if (!latestCharacter) return assignment;
+    if (JSON.stringify(assignment.character) === JSON.stringify(latestCharacter)) return assignment;
+    changed = true;
+    return { ...assignment, character: latestCharacter };
+  });
+  if (changed) {
+    saveAssignments();
+    renderAll();
+  }
+  return changed;
 }
 
 async function saveRosterChanges() {

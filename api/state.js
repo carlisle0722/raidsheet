@@ -52,15 +52,16 @@ export default async function handler(req, res) {
 
     if (method === "PATCH") {
       if (Array.isArray(body?.raidPlans)) {
-        await sql`
+        const rows = await sql`
           INSERT INTO raid_sheet_state (sheet_id, accounts, assignments, raid_plans, updated_at)
           VALUES (${sheetId}, '[]'::jsonb, '[]'::jsonb, ${JSON.stringify(body.raidPlans)}::jsonb, NOW())
           ON CONFLICT (sheet_id)
           DO UPDATE SET
             raid_plans = EXCLUDED.raid_plans,
             updated_at = NOW()
+          RETURNING updated_at
         `;
-        sendJson(res, 200, { ok: true });
+        sendJson(res, 200, { ok: true, updatedAt: rows[0]?.updated_at ?? null });
         return;
       }
 
@@ -76,7 +77,7 @@ export default async function handler(req, res) {
     const albumImages = Array.isArray(body?.albumImages) ? body.albumImages : [];
     const memoNotes = Array.isArray(body?.memoNotes) ? body.memoNotes : [];
 
-    await sql`
+    const rows = await sql`
       INSERT INTO raid_sheet_state (sheet_id, accounts, assignments, raid_plans, album_images, memo_notes, updated_at)
       VALUES (${sheetId}, ${JSON.stringify(accounts)}::jsonb, ${JSON.stringify(assignments)}::jsonb, ${JSON.stringify(raidPlans)}::jsonb, ${JSON.stringify(albumImages)}::jsonb, ${JSON.stringify(memoNotes)}::jsonb, NOW())
       ON CONFLICT (sheet_id)
@@ -87,10 +88,12 @@ export default async function handler(req, res) {
         album_images = EXCLUDED.album_images,
         memo_notes = EXCLUDED.memo_notes,
         updated_at = NOW()
+      RETURNING updated_at
     `;
 
     sendJson(res, 200, {
       ok: true,
+      updatedAt: rows[0]?.updated_at ?? null,
     });
   } catch (error) {
     console.error(error);

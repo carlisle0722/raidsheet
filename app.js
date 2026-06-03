@@ -2,8 +2,10 @@
 const minItemLevel = 1700;
 const maxAlbumImages = 14;
 const albumGridSlots = maxAlbumImages + 1;
+const remoteSyncIntervalMs = 5_000;
 let missingPaneResizeObserver = null;
 let auctionPartySize = 8;
+let remoteSyncTimer = null;
 const storageKeys = {
   accounts: "raidsheet:accounts:v4",
   legacyAccounts: "raidsheet:accounts:v3",
@@ -88,6 +90,8 @@ const state = {
   isLoading: false,
   isRemoteReady: false,
   lastUpdatedAt: null,
+  lastRemoteUpdatedAt: null,
+  isSavingRemote: false,
 };
 
 const elements = {
@@ -227,6 +231,7 @@ async function initializeApp() {
   await loadSheetState();
   initializeMissingPaneHeightSync();
   await loadRosters();
+  startRemoteSync();
 }
 
 async function loadRosters(options = {}) {
@@ -242,6 +247,8 @@ async function loadRosters(options = {}) {
     state.rosters = results;
     state.lastUpdatedAt = new Date();
     pruneAssignments();
+    const assignmentsUpdated = syncAssignmentsWithLatestRoster();
+    if (options.refresh && assignmentsUpdated && state.isRemoteReady) saveSheetState();
   } catch (error) {
     setCharacterLoadStatus(error.message || "조회에 실패했습니다.", "error");
   } finally {
@@ -906,13 +913,13 @@ function createSavedRaidPlanRow(plan, owners) {
   completed.checked = Boolean(plan.completed);
   completed.setAttribute("aria-label", `${plan.raidName || "레이드"} 완료`);
   completed.addEventListener("click", (event) => event.stopPropagation());
-  completed.addEventListener("change", () => updateSavedRaidPlanLocal(plan.id, { completed: completed.checked }));
+  completed.addEventListener("change", () => updateSavedRaidPlanCompleted(plan.id, completed.checked));
   completedCell.append(completed);
   completedCell.addEventListener("click", (event) => {
     event.stopPropagation();
     if (event.target === completed) return;
     completed.checked = !completed.checked;
-    updateSavedRaidPlanLocal(plan.id, { completed: completed.checked });
+    updateSavedRaidPlanCompleted(plan.id, completed.checked);
   });
 
   const raidCell = document.createElement("td");
@@ -1194,6 +1201,15 @@ function updateSavedRaidPlanLocal(id, patch, shouldRender = true) {
   }
 }
 
+async function updateSavedRaidPlanCompleted(id, completed) {
+  state.raidPlans = getRaidPlanRows(state.raidPlans).map((plan) => (plan.id === id ? { ...plan, completed } : plan));
+  saveRaidPlans();
+  renderRaidPlanner();
+  renderMissingRaidBoard();
+  const ok = await saveRaidPlansState();
+  if (!ok) setStatus("완료 체크 저장에 실패했습니다.", "error");
+}
+
 function updateSavedRaidPlanCharacterLocal(id, owner, key) {
   ensureRaidPlanEditBackup();
   state.raidPlans = getRaidPlanRows(state.raidPlans).map((plan) => {
@@ -1371,6 +1387,23 @@ function pruneAssignments() {
   const previousLength = state.assignments.length;
   state.assignments = state.assignments.filter((assignment) => knownKeys.has(assignment.key));
   if (state.assignments.length !== previousLength) saveAssignments();
+}
+
+function syncAssignmentsWithLatestRoster() {
+  const charactersByKey = new Map(getAllCharacters().map((character) => [character.key, character]));
+  let changed = false;
+  state.assignments = state.assignments.map((assignment) => {
+    const latestCharacter = charactersByKey.get(assignment.key);
+    if (!latestCharacter) return assignment;
+    if (JSON.stringify(assignment.character) === JSON.stringify(latestCharacter)) return assignment;
+    changed = true;
+    return { ...assignment, character: latestCharacter };
+  });
+  if (changed) {
+    saveAssignments();
+    renderAll();
+  }
+  return changed;
 }
 
 async function saveRosterChanges() {
@@ -2159,24 +2192,9 @@ async function loadSheetState() {
     const response = await fetch("/api/state");
     if (!response.ok) throw new Error("remote state unavailable");
     const payload = await response.json();
-    const remoteAccounts = normalizeAccounts(payload.accounts);
-    const remoteAssignments = normalizeAssignments(payload.assignments);
-    const remoteRaidPlans = normalizeRaidPlans(payload.raidPlans);
-    const remoteAlbumImages = normalizeAlbumImages(payload.albumImages);
-    const remoteMemoNotes = normalizeMemoNotes(payload.memoNotes);
-    const nextAccounts = remoteAccounts.length ? mergeAccountLists(remoteAccounts, state.accounts) : state.accounts;
-    state.accounts = mergeDefaultAvatars(nextAccounts);
-    if (Array.isArray(payload.assignments)) state.assignments = remoteAssignments;
-    if (Array.isArray(payload.raidPlans)) state.raidPlans = remoteRaidPlans;
-    if (Array.isArray(payload.albumImages)) state.albumImages = remoteAlbumImages;
-    if (Array.isArray(payload.memoNotes)) state.memoNotes = remoteMemoNotes;
-    state.raidPlanDrafts = [];
+    applyRemoteSheetState(payload, { resetDrafts: true });
     state.isRemoteReady = true;
-    saveAccounts();
-    saveAssignments();
-    saveRaidPlans();
-    saveAlbumImages();
-    saveMemoNotes();
+    state.lastRemoteUpdatedAt = payload.updatedAt ?? null;
     renderAll();
     if (!payload.exists) saveSheetState();
   } catch {
@@ -2186,6 +2204,7 @@ async function loadSheetState() {
 }
 
 async function saveSheetState() {
+  state.isSavingRemote = true;
   try {
     const response = await fetch("/api/state", {
       method: "PUT",
@@ -2193,14 +2212,18 @@ async function saveSheetState() {
       body: JSON.stringify({ accounts: state.accounts, assignments: state.assignments, raidPlans: state.raidPlans, albumImages: state.albumImages, memoNotes: state.memoNotes }),
     });
     state.isRemoteReady = response.ok;
+    await updateRemoteVersionFromResponse(response);
     return response.ok;
   } catch {
     state.isRemoteReady = false;
     return false;
+  } finally {
+    state.isSavingRemote = false;
   }
 }
 
 async function saveRaidPlansState() {
+  state.isSavingRemote = true;
   try {
     const response = await fetch("/api/state", {
       method: "PATCH",
@@ -2208,10 +2231,73 @@ async function saveRaidPlansState() {
       body: JSON.stringify({ raidPlans: state.raidPlans }),
     });
     state.isRemoteReady = response.ok;
+    await updateRemoteVersionFromResponse(response);
     return response.ok;
   } catch {
     state.isRemoteReady = false;
     return false;
+  } finally {
+    state.isSavingRemote = false;
+  }
+}
+
+function applyRemoteSheetState(payload, options = {}) {
+  const remoteAccounts = normalizeAccounts(payload.accounts);
+  const remoteAssignments = normalizeAssignments(payload.assignments);
+  const remoteRaidPlans = normalizeRaidPlans(payload.raidPlans);
+  const remoteAlbumImages = normalizeAlbumImages(payload.albumImages);
+  const remoteMemoNotes = normalizeMemoNotes(payload.memoNotes);
+  const nextAccounts = remoteAccounts.length ? mergeAccountLists(remoteAccounts, state.accounts) : state.accounts;
+  state.accounts = mergeDefaultAvatars(nextAccounts);
+  if (Array.isArray(payload.assignments)) state.assignments = remoteAssignments;
+  if (Array.isArray(payload.raidPlans)) state.raidPlans = remoteRaidPlans;
+  if (Array.isArray(payload.albumImages)) state.albumImages = remoteAlbumImages;
+  if (Array.isArray(payload.memoNotes)) state.memoNotes = remoteMemoNotes;
+  if (options.resetDrafts) state.raidPlanDrafts = [];
+  saveAccounts();
+  saveAssignments();
+  saveRaidPlans();
+  saveAlbumImages();
+  saveMemoNotes();
+}
+
+function startRemoteSync() {
+  if (remoteSyncTimer) window.clearInterval(remoteSyncTimer);
+  remoteSyncTimer = window.setInterval(syncRemoteStateIfChanged, remoteSyncIntervalMs);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) syncRemoteStateIfChanged();
+  });
+}
+
+function hasLocalRaidWorkInProgress() {
+  return state.editingRaidPlanIds.size > 0 || state.raidPlanDrafts.length > 0 || Boolean(state.raidPlanEditBackup);
+}
+
+async function syncRemoteStateIfChanged() {
+  if (document.hidden || state.isSavingRemote || hasLocalRaidWorkInProgress()) return;
+  try {
+    const response = await fetch("/api/state", { cache: "no-store" });
+    if (!response.ok) throw new Error("remote state unavailable");
+    const payload = await response.json();
+    state.isRemoteReady = true;
+    const remoteUpdatedAt = payload.updatedAt ?? null;
+    if (!remoteUpdatedAt || remoteUpdatedAt === state.lastRemoteUpdatedAt) return;
+    applyRemoteSheetState(payload, { resetDrafts: false });
+    state.lastRemoteUpdatedAt = remoteUpdatedAt;
+    renderAll();
+    setStatus("다른 사용자의 변경사항을 반영했습니다.", "success");
+  } catch {
+    state.isRemoteReady = false;
+  }
+}
+
+async function updateRemoteVersionFromResponse(response) {
+  if (!response.ok) return;
+  try {
+    const payload = await response.clone().json();
+    if (payload.updatedAt) state.lastRemoteUpdatedAt = payload.updatedAt;
+  } catch {
+    await syncRemoteStateIfChanged();
   }
 }
 

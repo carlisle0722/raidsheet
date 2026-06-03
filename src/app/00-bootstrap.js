@@ -2,8 +2,10 @@
 const minItemLevel = 1700;
 const maxAlbumImages = 14;
 const albumGridSlots = maxAlbumImages + 1;
+const remoteSyncIntervalMs = 5_000;
 let missingPaneResizeObserver = null;
 let auctionPartySize = 8;
+let remoteSyncTimer = null;
 const storageKeys = {
   accounts: "raidsheet:accounts:v4",
   legacyAccounts: "raidsheet:accounts:v3",
@@ -88,6 +90,8 @@ const state = {
   isLoading: false,
   isRemoteReady: false,
   lastUpdatedAt: null,
+  lastRemoteUpdatedAt: null,
+  isSavingRemote: false,
 };
 
 const elements = {
@@ -227,6 +231,7 @@ async function initializeApp() {
   await loadSheetState();
   initializeMissingPaneHeightSync();
   await loadRosters();
+  startRemoteSync();
 }
 
 async function loadRosters(options = {}) {
@@ -242,6 +247,8 @@ async function loadRosters(options = {}) {
     state.rosters = results;
     state.lastUpdatedAt = new Date();
     pruneAssignments();
+    const assignmentsUpdated = syncAssignmentsWithLatestRoster();
+    if (options.refresh && assignmentsUpdated && state.isRemoteReady) saveSheetState();
   } catch (error) {
     setCharacterLoadStatus(error.message || "조회에 실패했습니다.", "error");
   } finally {
