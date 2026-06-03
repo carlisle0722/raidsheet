@@ -86,7 +86,7 @@ const state = {
   draggingRaidPlanId: null,
   raidPlanFilter: null,
   missingRaidOwnerFilter: "",
-  missingRaidTypeFilter: "",
+  missingRaidTypeFilter: "primary",
   isLoading: false,
   isRemoteReady: false,
   lastUpdatedAt: null,
@@ -215,7 +215,7 @@ elements.missingRaidTypeFilter?.addEventListener("change", () => {
 });
 elements.resetMissingFilterButton?.addEventListener("click", () => {
   state.missingRaidOwnerFilter = "";
-  state.missingRaidTypeFilter = "";
+  state.missingRaidTypeFilter = "primary";
   renderMissingRaidBoard();
 });
 elements.addMemoButton?.addEventListener("click", openMemoDialog);
