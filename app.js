@@ -1233,6 +1233,11 @@ function updateSavedRaidPlanCharacterLocal(id, owner, key) {
 }
 
 function selectRaidPlanRow(id) {
+  if (state.editingRaidPlanIds.size && !state.editingRaidPlanIds.has(id)) {
+    alert("수정중입니다");
+    return;
+  }
+
   if (state.editingRaidPlanIds.has(id)) return;
   if (state.selectedRaidPlanIds.has(id)) {
     state.selectedRaidPlanIds.delete(id);
@@ -1647,9 +1652,20 @@ function getFilteredRaidPlanRows(rows) {
   const { type, owner, value } = state.raidPlanFilter;
   if (type === "raid") return rows.filter((plan) => plan.raidName === value);
   if (type === "status") return rows.filter((plan) => (value === "completed" ? plan.completed : !plan.completed));
-  if (type === "exclude-owner") return rows.filter((plan) => !plan.characters?.[owner]);
+  if (type === "exclude-owner") return rows.filter((plan) => isRaidPlanOwnerExcludedByFilter(plan, owner));
   if (type === "character") return rows.filter((plan) => plan.characters?.[owner] === value);
   return rows;
+}
+
+function isRaidPlanOwnerExcludedByFilter(plan, owner) {
+  const characterKey = plan.characters?.[owner];
+  if (!characterKey) return true;
+
+  const character = findCharacterByKey(characterKey);
+  if (!character) return true;
+
+  const status = getRaidPlanCellStatus(plan, character, state.raidPlans);
+  return status.isExcluded || status.isDuplicate;
 }
 
 function createRaidPlanFilter(type, value, owner = "") {
