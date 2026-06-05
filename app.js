@@ -6,6 +6,7 @@ const remoteSyncIntervalMs = 5_000;
 let missingPaneResizeObserver = null;
 let auctionPartySize = 8;
 let remoteSyncTimer = null;
+let siteToastTimer = null;
 const storageKeys = {
   accounts: "raidsheet:accounts:v4",
   legacyAccounts: "raidsheet:accounts:v3",
@@ -108,6 +109,7 @@ const elements = {
   status: document.querySelector("#status"),
   ownedStatus: document.querySelector("#owned-status"),
   savingOverlay: document.querySelector("#saving-overlay"),
+  siteToast: document.querySelector("#site-toast"),
   profileBoard: document.querySelector("#profile-board"),
   assignmentBoard: document.querySelector("#assignment-board"),
   rosterBoard: document.querySelector("#roster-board"),
@@ -1234,7 +1236,7 @@ function updateSavedRaidPlanCharacterLocal(id, owner, key) {
 
 function selectRaidPlanRow(id) {
   if (state.editingRaidPlanIds.size && !state.editingRaidPlanIds.has(id)) {
-    alert("수정중입니다");
+    showSiteToast("\uC218\uC815\uC911\uC785\uB2C8\uB2E4");
     return;
   }
 
@@ -2343,6 +2345,26 @@ function hideSavingOverlay() {
     return;
   }
   elements.savingOverlay.hidden = true;
+}
+
+function showSiteToast(message) {
+  if (!elements.siteToast) return;
+
+  const panel = elements.siteToast.querySelector(".site-toast-panel");
+  if (panel) panel.textContent = message;
+
+  elements.siteToast.hidden = false;
+  elements.siteToast.classList.add("is-visible");
+
+  if (siteToastTimer) window.clearTimeout(siteToastTimer);
+  siteToastTimer = window.setTimeout(() => {
+    elements.siteToast.classList.remove("is-visible");
+    window.setTimeout(() => {
+      if (!elements.siteToast.classList.contains("is-visible")) {
+        elements.siteToast.hidden = true;
+      }
+    }, 180);
+  }, 1400);
 }
 
 function readJson(key, fallback) {

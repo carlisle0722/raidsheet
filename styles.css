@@ -1197,6 +1197,43 @@ h3:has(.owner-avatar) {
   backdrop-filter: blur(2px);
 }
 
+.site-toast {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.site-toast[hidden] {
+  display: none;
+}
+
+.site-toast-panel {
+  min-width: 180px;
+  max-width: min(320px, calc(100vw - 32px));
+  padding: 14px 18px;
+  border: 1px solid rgba(47, 111, 106, 0.24);
+  border-radius: 8px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 18px 54px rgba(24, 31, 42, 0.22);
+  font-size: 1rem;
+  font-weight: 900;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(8px) scale(0.98);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
+.site-toast.is-visible .site-toast-panel {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
 .saving-panel {
   min-width: 148px;
   padding: 14px 18px;
