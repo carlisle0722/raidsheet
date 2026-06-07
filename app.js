@@ -2315,14 +2315,18 @@ function hasLocalRaidWorkInProgress() {
 async function syncRemoteStateIfChanged() {
   if (document.hidden || state.isSavingRemote || hasLocalRaidWorkInProgress()) return;
   try {
-    const response = await fetch("/api/state", { cache: "no-store" });
+    const versionResponse = await fetch("/api/state?scope=raid-plans&version=1", { cache: "no-store" });
+    if (!versionResponse.ok) throw new Error("remote state unavailable");
+    const versionPayload = await versionResponse.json();
+    state.isRemoteReady = true;
+    const remoteUpdatedAt = versionPayload.updatedAt ?? null;
+    if (!remoteUpdatedAt || remoteUpdatedAt === state.lastRemoteUpdatedAt) return;
+
+    const response = await fetch("/api/state?scope=raid-plans", { cache: "no-store" });
     if (!response.ok) throw new Error("remote state unavailable");
     const payload = await response.json();
-    state.isRemoteReady = true;
-    const remoteUpdatedAt = payload.updatedAt ?? null;
-    if (!remoteUpdatedAt || remoteUpdatedAt === state.lastRemoteUpdatedAt) return;
     applyRemoteSheetState(payload, { resetDrafts: false });
-    state.lastRemoteUpdatedAt = remoteUpdatedAt;
+    state.lastRemoteUpdatedAt = payload.updatedAt ?? remoteUpdatedAt;
     renderAll();
     setStatus("다른 사용자의 변경사항을 반영했습니다.", "success");
   } catch {

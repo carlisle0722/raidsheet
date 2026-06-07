@@ -33,8 +33,29 @@ export default async function handler(req, res) {
     await ensureTable(sql);
 
     if (method === "GET") {
-      const rows = await sql`SELECT accounts, assignments, raid_plans, album_images, memo_notes, updated_at FROM raid_sheet_state WHERE sheet_id = ${sheetId}`;
+      const mode = getStateMode(req);
+      const rows =
+        mode.scope === "raid-plans"
+          ? await sql`SELECT raid_plans, updated_at FROM raid_sheet_state WHERE sheet_id = ${sheetId}`
+          : await sql`SELECT accounts, assignments, raid_plans, album_images, memo_notes, updated_at FROM raid_sheet_state WHERE sheet_id = ${sheetId}`;
       const row = rows[0];
+
+      if (mode.versionOnly) {
+        sendJson(res, 200, {
+          exists: Boolean(row),
+          updatedAt: row?.updated_at ?? null,
+        });
+        return;
+      }
+
+      if (mode.scope === "raid-plans") {
+        sendJson(res, 200, {
+          exists: Boolean(row),
+          raidPlans: Array.isArray(row?.raid_plans) ? row.raid_plans : null,
+          updatedAt: row?.updated_at ?? null,
+        });
+        return;
+      }
 
       sendJson(res, 200, {
         exists: Boolean(row),
@@ -101,6 +122,18 @@ export default async function handler(req, res) {
       error: "DB 저장소 처리 중 오류가 발생했습니다.",
     });
   }
+}
+
+function getStateMode(req) {
+  const query = req.query ?? {};
+  const url = new URL(req.url ?? "/", "http://localhost");
+  const scope = query.scope ?? url.searchParams.get("scope");
+  const version = query.version ?? url.searchParams.get("version");
+
+  return {
+    scope: scope === "raid-plans" ? "raid-plans" : "all",
+    versionOnly: version === "1" || version === "true",
+  };
 }
 
 async function ensureTable(sql) {
