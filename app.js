@@ -2,7 +2,7 @@
 const minItemLevel = 1700;
 const maxAlbumImages = 14;
 const albumGridSlots = maxAlbumImages + 1;
-const remoteSyncIntervalMs = 5_000;
+const remoteSyncIntervalMs = 10_000;
 let missingPaneResizeObserver = null;
 let auctionPartySize = 8;
 let remoteSyncTimer = null;
@@ -2292,9 +2292,21 @@ function applyRemoteSheetState(payload, options = {}) {
 
 function startRemoteSync() {
   if (remoteSyncTimer) window.clearInterval(remoteSyncTimer);
-  remoteSyncTimer = window.setInterval(syncRemoteStateIfChanged, remoteSyncIntervalMs);
+  remoteSyncTimer = null;
+  if (!document.hidden) {
+    remoteSyncTimer = window.setInterval(syncRemoteStateIfChanged, remoteSyncIntervalMs);
+  }
   document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) syncRemoteStateIfChanged();
+    if (document.hidden) {
+      if (remoteSyncTimer) window.clearInterval(remoteSyncTimer);
+      remoteSyncTimer = null;
+      return;
+    }
+
+    syncRemoteStateIfChanged();
+    if (!remoteSyncTimer) {
+      remoteSyncTimer = window.setInterval(syncRemoteStateIfChanged, remoteSyncIntervalMs);
+    }
   });
 }
 
