@@ -1,6 +1,7 @@
 import { neon } from "@neondatabase/serverless";
 
 const sheetId = "default";
+const blobStatePath = "raidsheet/state/default.json";
 
 export default async function handler(req, res) {
   const method = req.method ?? "GET";
@@ -26,6 +27,11 @@ export default async function handler(req, res) {
       error: "지원하지 않는 요청입니다.",
     });
     return;
+  }
+
+  let body = null;
+  if (method !== "GET") {
+    body = await readJsonBody(req);
   }
 
   try {
@@ -68,8 +74,6 @@ export default async function handler(req, res) {
       });
       return;
     }
-
-    const body = await readJsonBody(req);
 
     if (method === "PATCH") {
       if (Array.isArray(body?.raidPlans)) {
@@ -118,6 +122,13 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error(error);
+    try {
+      const fallbackPayload = await handleBlobFallback(method, req, body);
+      sendJson(res, 200, { ...fallbackPayload, fallback: "blob" });
+      return;
+    } catch (fallbackError) {
+      console.error(fallbackError);
+    }
     sendJson(res, 500, {
       error: "DB 저장소 처리 중 오류가 발생했습니다.",
     });
@@ -134,6 +145,115 @@ function getStateMode(req) {
     scope: scope === "raid-plans" ? "raid-plans" : "all",
     versionOnly: version === "1" || version === "true",
   };
+}
+
+async function handleBlobFallback(method, req, body) {
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    throw new Error("BLOB_READ_WRITE_TOKEN is not configured");
+  }
+
+  const mode = getStateMode(req);
+
+  if (method === "GET") {
+    const state = await readBlobState();
+    return formatStatePayload(state, mode);
+  }
+
+  if (method === "PATCH") {
+    if (!Array.isArray(body?.raidPlans)) throw new Error("raidPlans is required");
+    const previous = await readBlobState();
+    const next = {
+      ...previous,
+      raidPlans: body.raidPlans,
+      updatedAt: new Date().toISOString(),
+    };
+    await writeBlobState(next);
+    return { ok: true, updatedAt: next.updatedAt };
+  }
+
+  const next = {
+    accounts: Array.isArray(body?.accounts) ? body.accounts : [],
+    assignments: Array.isArray(body?.assignments) ? body.assignments : [],
+    raidPlans: Array.isArray(body?.raidPlans) ? body.raidPlans : [],
+    albumImages: Array.isArray(body?.albumImages) ? body.albumImages : [],
+    memoNotes: Array.isArray(body?.memoNotes) ? body.memoNotes : [],
+    updatedAt: new Date().toISOString(),
+  };
+  await writeBlobState(next);
+  return { ok: true, updatedAt: next.updatedAt };
+}
+
+async function readBlobState() {
+  const { head } = await import("@vercel/blob");
+
+  try {
+    const blob = await head(blobStatePath);
+    const response = await fetch(`${blob.url}?t=${Date.now()}`, { cache: "no-store" });
+    if (!response.ok) throw new Error(`Blob state unavailable: ${response.status}`);
+    return normalizeBlobState(await response.json());
+  } catch (error) {
+    if (isBlobNotFoundError(error)) return getEmptyBlobState();
+    throw error;
+  }
+}
+
+async function writeBlobState(state) {
+  const { put } = await import("@vercel/blob");
+  await put(blobStatePath, JSON.stringify(normalizeBlobState(state)), {
+    access: "public",
+    addRandomSuffix: false,
+    allowOverwrite: true,
+    contentType: "application/json; charset=utf-8",
+  });
+}
+
+function formatStatePayload(state, mode) {
+  const exists = Boolean(state.updatedAt);
+
+  if (mode.versionOnly) {
+    return {
+      exists,
+      updatedAt: state.updatedAt ?? null,
+    };
+  }
+
+  if (mode.scope === "raid-plans") {
+    return {
+      exists,
+      raidPlans: state.raidPlans,
+      updatedAt: state.updatedAt ?? null,
+    };
+  }
+
+  return {
+    exists,
+    accounts: state.accounts,
+    assignments: state.assignments,
+    raidPlans: state.raidPlans,
+    albumImages: state.albumImages,
+    memoNotes: state.memoNotes,
+    updatedAt: state.updatedAt ?? null,
+  };
+}
+
+function normalizeBlobState(value) {
+  return {
+    accounts: Array.isArray(value?.accounts) ? value.accounts : [],
+    assignments: Array.isArray(value?.assignments) ? value.assignments : [],
+    raidPlans: Array.isArray(value?.raidPlans) ? value.raidPlans : [],
+    albumImages: Array.isArray(value?.albumImages) ? value.albumImages : [],
+    memoNotes: Array.isArray(value?.memoNotes) ? value.memoNotes : [],
+    updatedAt: value?.updatedAt ?? null,
+  };
+}
+
+function getEmptyBlobState() {
+  return normalizeBlobState({});
+}
+
+function isBlobNotFoundError(error) {
+  const message = String(error?.message ?? "");
+  return error?.name === "BlobNotFoundError" || message.includes("not exist") || message.includes("404");
 }
 
 async function ensureTable(sql) {
