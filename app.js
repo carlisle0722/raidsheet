@@ -2219,11 +2219,16 @@ async function loadSheetState() {
     const response = await fetch("/api/state");
     if (!response.ok) throw new Error("remote state unavailable");
     const payload = await response.json();
+    if (payload.fallback === "blob" && !payload.exists) {
+      state.isRemoteReady = true;
+      renderAll();
+      return;
+    }
     applyRemoteSheetState(payload, { resetDrafts: true });
     state.isRemoteReady = true;
     state.lastRemoteUpdatedAt = payload.updatedAt ?? null;
     renderAll();
-    if (!payload.exists) saveSheetState();
+    if (!payload.exists && payload.fallback !== "blob") saveSheetState();
   } catch {
     state.isRemoteReady = false;
     renderAll();
