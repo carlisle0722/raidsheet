@@ -2137,18 +2137,16 @@ async function addAlbumImages(files) {
 }
 
 async function uploadAlbumImage(file, dataUrl) {
-  try {
-    const response = await fetch("/api/album-image", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ fileName: file.name, contentType: file.type, dataUrl }),
-    });
-    const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error ?? "앨범 사진 업로드에 실패했습니다.");
-    return payload.url;
-  } catch {
-    return dataUrl;
+  const response = await fetch("/api/album-image", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ fileName: file.name, contentType: file.type, dataUrl }),
+  });
+  const payload = await response.json();
+  if (!response.ok || !payload.url) {
+    throw new Error(payload.error ?? "\uC568\uBC94 \uC0AC\uC9C4\uC744 Blob \uC800\uC7A5\uC18C\uC5D0 \uC5C5\uB85C\uB4DC\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.");
   }
+  return payload.url;
 }
 
 async function removeAlbumImage(id) {
