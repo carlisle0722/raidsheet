@@ -2227,11 +2227,12 @@ async function loadSheetState() {
     const repairedFallback = payload.fallback === "blob" ? repairFallbackPayload(payload) : payload;
     const shouldSaveFallbackRepair = payload.fallback === "blob" && repairedFallback !== payload;
     applyRemoteSheetState(repairedFallback, { resetDrafts: true });
+    const migratedAvatars = await migrateAccountDataUrlAvatars();
     state.isRemoteReady = true;
     state.lastRemoteUpdatedAt = repairedFallback.updatedAt ?? null;
     renderAll();
     if (!payload.exists && payload.fallback !== "blob") saveSheetState();
-    if (shouldSaveFallbackRepair) saveSheetState();
+    if (shouldSaveFallbackRepair || migratedAvatars) saveSheetState();
   } catch {
     state.isRemoteReady = false;
     renderAll();
@@ -2257,6 +2258,45 @@ function repairFallbackPayload(payload) {
   }
 
   return didRepair ? repaired : payload;
+}
+
+async function migrateAccountDataUrlAvatars() {
+  const accountsWithDataUrl = state.accounts.filter((account) => String(account.avatarUrl ?? "").startsWith("data:image/"));
+  if (!accountsWithDataUrl.length) return false;
+
+  let didMigrate = false;
+  for (const account of accountsWithDataUrl) {
+    try {
+      const avatarUrl = String(account.avatarUrl);
+      const contentType = getDataUrlContentType(avatarUrl);
+      const url = await uploadProfileDataUrl(`${account.owner || account.label || account.id || "profile"}.png`, contentType, avatarUrl);
+      state.accounts = state.accounts.map((item) => (item.id === account.id ? { ...item, avatarUrl: url } : item));
+      didMigrate = true;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  if (didMigrate) saveAccounts();
+  return didMigrate;
+}
+
+function getDataUrlContentType(dataUrl) {
+  const match = String(dataUrl).match(/^data:([^;,]+)[;,]/);
+  return match?.[1] ?? "image/png";
+}
+
+async function uploadProfileDataUrl(fileName, contentType, dataUrl) {
+  const response = await fetch("/api/profile-image", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ fileName, contentType, dataUrl }),
+  });
+  const payload = await response.json();
+  if (!response.ok || !payload.url) {
+    throw new Error(payload.error ?? "\uD504\uB85C\uD544 \uC0AC\uC9C4\uC744 Blob \uC800\uC7A5\uC18C\uC5D0 \uC5C5\uB85C\uB4DC\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.");
+  }
+  return payload.url;
 }
 
 async function saveSheetState() {
