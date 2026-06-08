@@ -250,7 +250,7 @@ async function loadRosters(options = {}) {
     state.lastUpdatedAt = new Date();
     pruneAssignments();
     const assignmentsUpdated = syncAssignmentsWithLatestRoster();
-    if (options.refresh && assignmentsUpdated && state.isRemoteReady) saveSheetState();
+    if (options.refresh && assignmentsUpdated && state.isRemoteReady) await saveSheetState();
   } catch (error) {
     setCharacterLoadStatus(error.message || "조회에 실패했습니다.", "error");
   } finally {
@@ -1470,7 +1470,7 @@ function addAccountEditorRow(account = {}) {
   elements.accountEditor.append(row);
 }
 
-function saveAccountEditor() {
+async function saveAccountEditor() {
   const rows = [...elements.accountEditor.querySelectorAll(".account-row")];
   const nextAccounts = rows.map((row, index) => {
     const queryName = row.querySelector('[data-field="queryName"]').value.trim();
@@ -1488,7 +1488,7 @@ function saveAccountEditor() {
 
   state.accounts = nextAccounts;
   saveAccounts();
-  saveSheetState();
+  await saveSheetState();
   elements.accountsDialog.close();
   loadRosters({ refresh: true });
 }
@@ -2231,8 +2231,8 @@ async function loadSheetState() {
     state.isRemoteReady = true;
     state.lastRemoteUpdatedAt = repairedFallback.updatedAt ?? null;
     renderAll();
-    if (!payload.exists && payload.fallback !== "blob") saveSheetState();
-    if (shouldSaveFallbackRepair || migratedAvatars) saveSheetState();
+    if (!payload.exists && payload.fallback !== "blob") await saveSheetState();
+    if (shouldSaveFallbackRepair || migratedAvatars) await saveSheetState();
   } catch {
     state.isRemoteReady = false;
     renderAll();

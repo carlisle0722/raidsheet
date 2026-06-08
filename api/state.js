@@ -2,6 +2,8 @@ import { neon } from "@neondatabase/serverless";
 
 const sheetId = "default";
 const blobStatePath = "raidsheet/state/default.json";
+const blobStatePrefix = "raidsheet/state/default-";
+const blobStateKeepCount = 5;
 
 export default async function handler(req, res) {
   const method = req.method ?? "GET";
@@ -184,10 +186,12 @@ async function handleBlobFallback(method, req, body) {
 }
 
 async function readBlobState() {
-  const { head } = await import("@vercel/blob");
+  const { head, list } = await import("@vercel/blob");
 
   try {
-    const blob = await head(blobStatePath);
+    const blobs = await list({ prefix: blobStatePrefix, limit: 100 });
+    const latestBlob = getLatestStateBlob(blobs.blobs);
+    const blob = latestBlob ?? (await head(blobStatePath));
     const response = await fetch(`${blob.url}?t=${Date.now()}`, { cache: "no-store" });
     if (!response.ok) throw new Error(`Blob state unavailable: ${response.status}`);
     return normalizeBlobState(await response.json());
@@ -199,12 +203,29 @@ async function readBlobState() {
 
 async function writeBlobState(state) {
   const { put } = await import("@vercel/blob");
-  await put(blobStatePath, JSON.stringify(normalizeBlobState(state)), {
+  const pathname = `${blobStatePrefix}${Date.now()}.json`;
+  await put(pathname, JSON.stringify(normalizeBlobState(state)), {
     access: "public",
     addRandomSuffix: false,
-    allowOverwrite: true,
     contentType: "application/json; charset=utf-8",
+    cacheControlMaxAge: 60,
   });
+  await pruneOldBlobStates();
+}
+
+function getLatestStateBlob(blobs) {
+  const candidates = Array.isArray(blobs) ? blobs.filter((blob) => blob.pathname?.startsWith(blobStatePrefix)) : [];
+  candidates.sort((left, right) => String(right.pathname).localeCompare(String(left.pathname)));
+  return candidates[0] ?? null;
+}
+
+async function pruneOldBlobStates() {
+  const { del, list } = await import("@vercel/blob");
+  const blobs = await list({ prefix: blobStatePrefix, limit: 100 });
+  const candidates = Array.isArray(blobs.blobs) ? [...blobs.blobs] : [];
+  candidates.sort((left, right) => String(right.pathname).localeCompare(String(left.pathname)));
+  const stalePathnames = candidates.slice(blobStateKeepCount).map((blob) => blob.pathname).filter(Boolean);
+  if (stalePathnames.length) await del(stalePathnames);
 }
 
 function formatStatePayload(state, mode) {
