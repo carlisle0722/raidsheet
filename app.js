@@ -2466,7 +2466,7 @@ function showSiteToast(message) {
         elements.siteToast.hidden = true;
       }
     }, 180);
-  }, 1400);
+  }, 3200);
 }
 
 function readJson(key, fallback) {
