@@ -1,6 +1,7 @@
 // 상수, 상태, DOM 요소, 이벤트 연결, 초기 로딩
 const minItemLevel = 1700;
 const maxAlbumImages = 14;
+const maxUploadImageBytes = 4 * 1024 * 1024;
 const albumGridSlots = maxAlbumImages + 1;
 const remoteSyncIntervalMs = 10_000;
 let missingPaneResizeObserver = null;
@@ -1781,7 +1782,8 @@ async function uploadOwnerProfileImage(owner, preview, file) {
     setStatus("이미지 파일만 업로드할 수 있습니다.", "error");
     return;
   }
-  if (file.size > 4 * 1024 * 1024) {
+  if (file.size > maxUploadImageBytes) {
+    showImageSizeExceededToast(file);
     setStatus("프로필 사진은 4MB 이하만 업로드할 수 있습니다.", "error");
     return;
   }
@@ -1826,6 +1828,16 @@ function readFileAsDataUrl(file) {
     reader.addEventListener("error", () => reject(new Error("이미지를 읽을 수 없습니다.")));
     reader.readAsDataURL(file);
   });
+}
+
+function showImageSizeExceededToast(file) {
+  showSiteToast(`이미지가 너무 큽니다. ${file.name} (${formatFileSize(file.size)})는 4MB 이하로 줄여서 업로드해 주세요.`);
+}
+
+function formatFileSize(bytes) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "0KB";
+  if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)}MB`;
+  return `${Math.ceil(bytes / 1024)}KB`;
 }
 
 function uniqueCharacters(characters) {
@@ -2107,6 +2119,13 @@ function formatMemoDate(value) {
 async function addAlbumImages(files) {
   const selectedFiles = [...(files ?? [])].filter((file) => file.type.startsWith("image/"));
   if (!selectedFiles.length) return;
+  const oversizedFile = selectedFiles.find((file) => file.size > maxUploadImageBytes);
+  if (oversizedFile) {
+    showImageSizeExceededToast(oversizedFile);
+    setStatus("\uC774\uBBF8\uC9C0\uB294 4MB \uC774\uD558\uB9CC \uC5C5\uB85C\uB4DC\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.", "error");
+    if (elements.albumUploadInput) elements.albumUploadInput.value = "";
+    return;
+  }
   const slots = Math.max(0, maxAlbumImages - state.albumImages.length);
   if (!slots || selectedFiles.length > slots) {
     showAlbumLimitAlert();
