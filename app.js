@@ -2224,15 +2224,39 @@ async function loadSheetState() {
       renderAll();
       return;
     }
-    applyRemoteSheetState(payload, { resetDrafts: true });
+    const repairedFallback = payload.fallback === "blob" ? repairFallbackPayload(payload) : payload;
+    const shouldSaveFallbackRepair = payload.fallback === "blob" && repairedFallback !== payload;
+    applyRemoteSheetState(repairedFallback, { resetDrafts: true });
     state.isRemoteReady = true;
-    state.lastRemoteUpdatedAt = payload.updatedAt ?? null;
+    state.lastRemoteUpdatedAt = repairedFallback.updatedAt ?? null;
     renderAll();
     if (!payload.exists && payload.fallback !== "blob") saveSheetState();
+    if (shouldSaveFallbackRepair) saveSheetState();
   } catch {
     state.isRemoteReady = false;
     renderAll();
   }
+}
+
+function repairFallbackPayload(payload) {
+  let didRepair = false;
+  const repaired = { ...payload };
+  const repairs = [
+    ["accounts", state.accounts],
+    ["assignments", state.assignments],
+    ["raidPlans", state.raidPlans],
+    ["albumImages", state.albumImages],
+    ["memoNotes", state.memoNotes],
+  ];
+
+  for (const [key, localValue] of repairs) {
+    if (Array.isArray(repaired[key]) && repaired[key].length === 0 && Array.isArray(localValue) && localValue.length > 0) {
+      repaired[key] = localValue;
+      didRepair = true;
+    }
+  }
+
+  return didRepair ? repaired : payload;
 }
 
 async function saveSheetState() {
