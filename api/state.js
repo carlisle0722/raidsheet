@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     process.env.POSTGRES_URL_NON_POOLING ??
     process.env.DATABASE_URL_UNPOOLED;
 
-  if (!databaseUrl) {
+  if (!databaseUrl && !getUpstashConfig()) {
     sendJson(res, 503, {
       error: "DATABASE_URL이 설정되지 않았습니다.",
     });

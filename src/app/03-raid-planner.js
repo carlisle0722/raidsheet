@@ -121,7 +121,7 @@ function createTableHeader(label) {
 
 function createRaidHeaderCell() {
   const cell = createTableHeader("");
-  cell.append(createFilterHeaderContent("레이드", "raid", getRaidFilterOptions(), state.raidPlanFilter?.type === "raid" ? state.raidPlanFilter.value : ""));
+  cell.append(createFilterHeaderContent("레이드", "raid", getRaidFilterOptions(), getRaidFilterValue()));
   return cell;
 }
 
@@ -155,7 +155,7 @@ function createFilterHeaderContent(label, type, options, selectedValue, owner = 
   select.value = selectedValue;
   select.addEventListener("click", (event) => event.stopPropagation());
   select.addEventListener("change", () => {
-    state.raidPlanFilter = createRaidPlanFilter(type, select.value, owner);
+    updateRaidPlanFilter(type, select.value, owner);
     state.selectedRaidPlanIds.clear();
     state.editingRaidPlanIds.clear();
     renderRaidPlanner();
@@ -174,7 +174,7 @@ function createFilterHeaderContent(label, type, options, selectedValue, owner = 
 
 function createCompletedHeaderCell() {
   const cell = createTableHeader("");
-  cell.append(createFilterHeaderContent("완료", "status", getStatusFilterOptions(), state.raidPlanFilter?.type === "status" ? state.raidPlanFilter.value : ""));
+  cell.append(createFilterHeaderContent("완료", "status", getStatusFilterOptions(), getStatusFilterValue()));
   return cell;
 }
 
@@ -1003,19 +1003,61 @@ function getRaidPlanRows(raidPlans = state.raidPlanDrafts) {
 }
 
 function getFilteredRaidPlanRows(rows) {
-  if (!state.raidPlanFilter) return rows;
-  const { type, owner, value } = state.raidPlanFilter;
-  if (type === "raid") return rows.filter((plan) => plan.raidName === value);
-  if (type === "status") return rows.filter((plan) => (value === "completed" ? plan.completed : !plan.completed));
-  if (type === "exclude-owner") return rows.filter((plan) => !plan.characters?.[owner]);
-  if (type === "character") return rows.filter((plan) => plan.characters?.[owner] === value);
-  return rows;
+  const filters = getRaidPlanFilters();
+  let filteredRows = rows;
+  if (filters.raid) filteredRows = filteredRows.filter((plan) => plan.raidName === filters.raid.value);
+  if (filters.status) filteredRows = filteredRows.filter((plan) => (filters.status.value === "completed" ? plan.completed : !plan.completed));
+  if (filters.character?.type === "exclude-owner") filteredRows = filteredRows.filter((plan) => isRaidPlanOwnerExcludedByFilter(plan, filters.character.owner));
+  if (filters.character?.type === "character") filteredRows = filteredRows.filter((plan) => plan.characters?.[filters.character.owner] === filters.character.value);
+  return filteredRows;
 }
 
-function createRaidPlanFilter(type, value, owner = "") {
-  if (!value) return null;
-  if (type === "character" && value === "__exclude_owner__") return { type: "exclude-owner", owner, value };
-  return { type, owner, value };
+function isRaidPlanOwnerExcludedByFilter(plan, owner) {
+  const characterKey = plan.characters?.[owner];
+  if (!characterKey) return true;
+
+  const character = findCharacterByKey(characterKey);
+  if (!character) return true;
+
+  const status = getRaidPlanCellStatus(plan, character, state.raidPlans);
+  return status.isExcluded || status.isDuplicate;
+}
+
+function updateRaidPlanFilter(type, value, owner = "") {
+  const next = getRaidPlanFilters();
+  if (type === "raid") {
+    state.raidPlanFilter = value ? { raid: { type, owner, value }, character: null, status: null } : null;
+    return;
+  }
+
+  next.raid = null;
+  if (type === "status") next.status = value ? { type, owner, value } : null;
+  if (type === "character") next.character = value ? createCharacterRaidPlanFilter(value, owner) : null;
+  state.raidPlanFilter = next.raid || next.character || next.status ? next : null;
+}
+
+function createCharacterRaidPlanFilter(value, owner = "") {
+  if (value === "__exclude_owner__") return { type: "exclude-owner", owner, value };
+  return { type: "character", owner, value };
+}
+
+function getRaidPlanFilters() {
+  const filter = state.raidPlanFilter;
+  const empty = { raid: null, character: null, status: null };
+  if (!filter) return empty;
+  if ("raid" in filter || "character" in filter || "status" in filter) return { ...empty, ...filter };
+  if (filter.type === "raid") return { ...empty, raid: filter };
+  if (filter.type === "status") return { ...empty, status: filter };
+  if (filter.type === "character" || filter.type === "exclude-owner") return { ...empty, character: filter };
+  return empty;
+}
+
+function getRaidFilterValue() {
+  return getRaidPlanFilters().raid?.value ?? "";
+}
+
+function getStatusFilterValue() {
+  return getRaidPlanFilters().status?.value ?? "";
 }
 
 function getStatusFilterOptions() {
@@ -1026,7 +1068,7 @@ function getStatusFilterOptions() {
 }
 
 function getOwnerFilterValue(owner) {
-  const filter = state.raidPlanFilter;
+  const filter = getRaidPlanFilters().character;
   if (!filter || filter.owner !== owner) return "";
   if (filter.type === "exclude-owner") return "__exclude_owner__";
   if (filter.type === "character") return filter.value ?? "";
