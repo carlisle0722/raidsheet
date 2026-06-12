@@ -1,6 +1,8 @@
 import { neon } from "@neondatabase/serverless";
 
 const sheetId = "default";
+const redisStateKey = `raidsheet:state:${sheetId}`;
+const redisUpdatedAtKey = `raidsheet:state:${sheetId}:updatedAt`;
 const blobStatePath = "raidsheet/state/default.json";
 const blobStatePrefix = "raidsheet/state/default-";
 const blobStateKeepCount = 5;
@@ -34,6 +36,17 @@ export default async function handler(req, res) {
   let body = null;
   if (method !== "GET") {
     body = await readJsonBody(req);
+  }
+
+  const upstash = getUpstashConfig();
+  if (upstash) {
+    try {
+      const payload = await handleUpstashState(method, req, body, upstash);
+      sendJson(res, 200, { ...payload, storage: "upstash" });
+      return;
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   try {
@@ -147,6 +160,82 @@ function getStateMode(req) {
     scope: scope === "raid-plans" ? "raid-plans" : "all",
     versionOnly: version === "1" || version === "true",
   };
+}
+
+function getUpstashConfig() {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) return null;
+  return { url: url.replace(/\/+$/, ""), token };
+}
+
+async function handleUpstashState(method, req, body, config) {
+  const mode = getStateMode(req);
+
+  if (method === "GET") {
+    if (mode.versionOnly) {
+      const updatedAt = await redisCommand(config, ["GET", redisUpdatedAtKey]);
+      return {
+        exists: Boolean(updatedAt),
+        updatedAt: updatedAt ?? null,
+      };
+    }
+
+    const state = await readRedisState(config);
+    return formatStatePayload(state, mode);
+  }
+
+  if (method === "PATCH") {
+    if (!Array.isArray(body?.raidPlans)) throw new Error("raidPlans is required");
+    const previous = await readRedisState(config);
+    const next = {
+      ...previous,
+      raidPlans: body.raidPlans,
+      updatedAt: new Date().toISOString(),
+    };
+    await writeRedisState(config, next);
+    return { ok: true, updatedAt: next.updatedAt };
+  }
+
+  const next = {
+    accounts: Array.isArray(body?.accounts) ? body.accounts : [],
+    assignments: Array.isArray(body?.assignments) ? body.assignments : [],
+    raidPlans: Array.isArray(body?.raidPlans) ? body.raidPlans : [],
+    albumImages: Array.isArray(body?.albumImages) ? body.albumImages : [],
+    memoNotes: Array.isArray(body?.memoNotes) ? body.memoNotes : [],
+    updatedAt: new Date().toISOString(),
+  };
+  await writeRedisState(config, next);
+  return { ok: true, updatedAt: next.updatedAt };
+}
+
+async function readRedisState(config) {
+  const value = await redisCommand(config, ["GET", redisStateKey]);
+  if (!value) return getEmptyBlobState();
+  return normalizeBlobState(typeof value === "string" ? JSON.parse(value) : value);
+}
+
+async function writeRedisState(config, state) {
+  const normalizedState = normalizeBlobState(state);
+  await redisCommand(config, ["SET", redisStateKey, JSON.stringify(normalizedState)]);
+  await redisCommand(config, ["SET", redisUpdatedAtKey, normalizedState.updatedAt ?? ""]);
+}
+
+async function redisCommand(config, command) {
+  const response = await fetch(config.url, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${config.token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify(command),
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || payload.error) {
+    throw new Error(payload.error ?? `Upstash request failed: ${response.status}`);
+  }
+  return payload.result;
 }
 
 async function handleBlobFallback(method, req, body) {

@@ -2240,8 +2240,10 @@ async function loadSheetState() {
     if (!response.ok) throw new Error("remote state unavailable");
     const payload = await response.json();
     updateRemoteStorageMode(payload);
-    if (payload.fallback === "blob" && !payload.exists) {
+    if (!payload.exists) {
       state.isRemoteReady = true;
+      state.lastRemoteUpdatedAt = null;
+      if (payload.fallback !== "blob") await saveSheetState();
       renderAll();
       return;
     }
