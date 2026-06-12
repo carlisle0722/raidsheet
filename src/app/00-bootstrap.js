@@ -2,7 +2,7 @@
 const minItemLevel = 1700;
 const maxAlbumImages = 14;
 const albumGridSlots = maxAlbumImages + 1;
-const remoteSyncIntervalMs = 30_000;
+const remoteSyncIntervalMs = 60_000;
 let missingPaneResizeObserver = null;
 let auctionPartySize = 8;
 let remoteSyncTimer = null;
