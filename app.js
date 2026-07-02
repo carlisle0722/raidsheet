@@ -93,7 +93,6 @@ const state = {
   isRemoteReady: false,
   lastUpdatedAt: null,
   lastRemoteUpdatedAt: null,
-  remoteStorageMode: "unknown",
   isSavingRemote: false,
 };
 
@@ -2270,53 +2269,16 @@ async function loadSheetState() {
     const response = await fetch("/api/state");
     if (!response.ok) throw new Error("remote state unavailable");
     const payload = await response.json();
-    updateRemoteStorageMode(payload);
-    if (!payload.exists) {
-      state.isRemoteReady = true;
-      state.lastRemoteUpdatedAt = null;
-      if (payload.fallback !== "blob") await saveSheetState();
-      renderAll();
-      return;
-    }
-    const repairedFallback = payload.fallback === "blob" ? repairFallbackPayload(payload) : payload;
-    const shouldSaveFallbackRepair = payload.fallback === "blob" && repairedFallback !== payload;
-    applyRemoteSheetState(repairedFallback, { resetDrafts: true });
+    applyRemoteSheetState(payload, { resetDrafts: true });
     const migratedAvatars = await migrateAccountDataUrlAvatars();
     state.isRemoteReady = true;
-    state.lastRemoteUpdatedAt = repairedFallback.updatedAt ?? null;
+    state.lastRemoteUpdatedAt = payload.updatedAt ?? null;
     renderAll();
-    if (!payload.exists && payload.fallback !== "blob") await saveSheetState();
-    if (shouldSaveFallbackRepair || migratedAvatars) await saveSheetState();
+    if (!payload.exists || migratedAvatars) await saveSheetState();
   } catch {
     state.isRemoteReady = false;
-    state.remoteStorageMode = "unknown";
     renderAll();
   }
-}
-
-function updateRemoteStorageMode(payload) {
-  state.remoteStorageMode = payload?.fallback === "blob" ? "blob" : "neon";
-}
-
-function repairFallbackPayload(payload) {
-  let didRepair = false;
-  const repaired = { ...payload };
-  const repairs = [
-    ["accounts", state.accounts],
-    ["assignments", state.assignments],
-    ["raidPlans", state.raidPlans],
-    ["albumImages", state.albumImages],
-    ["memoNotes", state.memoNotes],
-  ];
-
-  for (const [key, localValue] of repairs) {
-    if (Array.isArray(repaired[key]) && repaired[key].length === 0 && Array.isArray(localValue) && localValue.length > 0) {
-      repaired[key] = localValue;
-      didRepair = true;
-    }
-  }
-
-  return didRepair ? repaired : payload;
 }
 
 async function migrateAccountDataUrlAvatars() {
@@ -2419,7 +2381,6 @@ function applyRemoteSheetState(payload, options = {}) {
 function startRemoteSync() {
   if (remoteSyncTimer) window.clearInterval(remoteSyncTimer);
   remoteSyncTimer = null;
-  if (state.remoteStorageMode === "blob") return;
   if (!document.hidden) {
     remoteSyncTimer = window.setInterval(syncRemoteStateIfChanged, remoteSyncIntervalMs);
   }
@@ -2430,7 +2391,6 @@ function startRemoteSync() {
       return;
     }
 
-    if (state.remoteStorageMode === "blob") return;
     syncRemoteStateIfChanged();
     if (!remoteSyncTimer) {
       remoteSyncTimer = window.setInterval(syncRemoteStateIfChanged, remoteSyncIntervalMs);
@@ -2443,17 +2403,11 @@ function hasLocalRaidWorkInProgress() {
 }
 
 async function syncRemoteStateIfChanged() {
-  if (state.remoteStorageMode === "blob" || document.hidden || state.isSavingRemote || hasLocalRaidWorkInProgress()) return;
+  if (document.hidden || state.isSavingRemote || hasLocalRaidWorkInProgress()) return;
   try {
     const versionResponse = await fetch("/api/state?scope=raid-plans&version=1", { cache: "no-store" });
     if (!versionResponse.ok) throw new Error("remote state unavailable");
     const versionPayload = await versionResponse.json();
-    updateRemoteStorageMode(versionPayload);
-    if (state.remoteStorageMode === "blob") {
-      if (remoteSyncTimer) window.clearInterval(remoteSyncTimer);
-      remoteSyncTimer = null;
-      return;
-    }
     state.isRemoteReady = true;
     const remoteUpdatedAt = versionPayload.updatedAt ?? null;
     if (!remoteUpdatedAt || remoteUpdatedAt === state.lastRemoteUpdatedAt) return;
@@ -2461,7 +2415,6 @@ async function syncRemoteStateIfChanged() {
     const response = await fetch("/api/state?scope=raid-plans", { cache: "no-store" });
     if (!response.ok) throw new Error("remote state unavailable");
     const payload = await response.json();
-    updateRemoteStorageMode(payload);
     applyRemoteSheetState(payload, { resetDrafts: false });
     state.lastRemoteUpdatedAt = payload.updatedAt ?? remoteUpdatedAt;
     renderAll();
@@ -2475,7 +2428,6 @@ async function updateRemoteVersionFromResponse(response) {
   if (!response.ok) return;
   try {
     const payload = await response.clone().json();
-    updateRemoteStorageMode(payload);
     if (payload.updatedAt) state.lastRemoteUpdatedAt = payload.updatedAt;
   } catch {
     await syncRemoteStateIfChanged();
