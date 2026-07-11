@@ -1607,17 +1607,8 @@ function showRaidSelectionWarning(plan, owner, characterKey, raidPlans) {
 
 function canJoinRaid(character, raidName) {
   if (!raidName) return true;
-  const raid = getRaidCatalogItem(raidName);
-  if (!raid) {
-    const recommendation = getRaidRecommendation(character);
-    return raidListIncludes(recommendation.primary, raidName) || raidListIncludes(recommendation.extra, raidName);
-  }
-  return Number(character?.itemLevelNumber ?? 0) >= raid.minLevel;
-}
-
-function getRaidCatalogItem(raidName) {
-  const normalizedRaidName = normalizeRaidNameForColor(raidName);
-  return raidCatalog.find((raid) => normalizeRaidNameForColor(raid.name) === normalizedRaidName);
+  const recommendation = getRaidRecommendation(character);
+  return raidListIncludes(recommendation.primary, raidName) || raidListIncludes(recommendation.extra, raidName);
 }
 
 function raidListIncludes(raidNames, raidName) {
