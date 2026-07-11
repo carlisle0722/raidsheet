@@ -354,6 +354,8 @@ function createRaidOwnerCell(plan, owner, scope = "draft") {
     } else if (optionStatus.isExtra) {
       option.className = "is-extra-option";
       option.style.color = "var(--option-extra)";
+    } else {
+      option.style.color = "var(--ink)";
     }
     select.add(option);
   }

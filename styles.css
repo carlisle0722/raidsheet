@@ -909,6 +909,10 @@ h3:has(.owner-avatar) {
   color: var(--danger);
 }
 
+.raid-character-select option {
+  color: var(--ink);
+}
+
 .raid-character-select option.is-extra-option {
   color: var(--option-extra);
 }
