@@ -952,11 +952,11 @@ function showRaidSelectionWarning(plan, owner, characterKey, raidPlans) {
   const nextPlan = { ...plan, characters: { ...(plan.characters ?? {}), [owner]: characterKey } };
   const optionStatus = getRaidCharacterOptionStatus(nextPlan, character, raidPlans);
   if (optionStatus.isDuplicate) {
-    alert("이미 편성된 캐릭입니다.");
+    showSiteToast("이미 편성된 캐릭입니다.");
     return;
   }
   const cellStatus = getRaidPlanCellStatus(nextPlan, character, raidPlans);
-  if (cellStatus.isExcluded) alert("현재 레이드와 레벨이 맞지 않습니다.");
+  if (cellStatus.isExcluded) showSiteToast("현재 레이드와 레벨이 맞지 않습니다.");
 }
 
 function canJoinRaid(character, raidName) {

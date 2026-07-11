@@ -130,6 +130,26 @@ function hideSavingOverlay() {
   elements.savingOverlay.hidden = true;
 }
 
+function showSiteToast(message) {
+  if (!elements.siteToast) return;
+
+  const panel = elements.siteToast.querySelector(".site-toast-panel");
+  if (panel) panel.textContent = message;
+
+  elements.siteToast.hidden = false;
+  elements.siteToast.classList.add("is-visible");
+
+  if (siteToastTimer) window.clearTimeout(siteToastTimer);
+  siteToastTimer = window.setTimeout(() => {
+    elements.siteToast.classList.remove("is-visible");
+    window.setTimeout(() => {
+      if (!elements.siteToast.classList.contains("is-visible")) {
+        elements.siteToast.hidden = true;
+      }
+    }, 180);
+  }, 3200);
+}
+
 function readJson(key, fallback) {
   try {
     const value = localStorage.getItem(key);

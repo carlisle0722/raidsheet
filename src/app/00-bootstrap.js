@@ -6,6 +6,7 @@ const remoteSyncIntervalMs = 60_000;
 let missingPaneResizeObserver = null;
 let auctionPartySize = 8;
 let remoteSyncTimer = null;
+let siteToastTimer = null;
 const storageKeys = {
   accounts: "raidsheet:accounts:v4",
   legacyAccounts: "raidsheet:accounts:v3",
@@ -108,6 +109,7 @@ const elements = {
   status: document.querySelector("#status"),
   ownedStatus: document.querySelector("#owned-status"),
   savingOverlay: document.querySelector("#saving-overlay"),
+  siteToast: document.querySelector("#site-toast"),
   profileBoard: document.querySelector("#profile-board"),
   assignmentBoard: document.querySelector("#assignment-board"),
   rosterBoard: document.querySelector("#roster-board"),
