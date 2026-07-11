@@ -349,7 +349,7 @@ function createRaidOwnerCell(plan, owner, scope = "draft") {
     const optionStatus = getRaidCharacterOptionStatus(plan, character, raidPlans);
     const cellStatus = getRaidPlanCellStatus({ ...plan, characters: { ...(plan.characters ?? {}), [owner]: character.key } }, character, raidPlans);
     if (optionStatus.isDuplicate || cellStatus.isExcluded) {
-      option.className = "is-duplicate-option";
+      option.className = "is-danger-option";
       option.style.color = "var(--danger)";
     } else if (optionStatus.isExtra) {
       option.className = "is-extra-option";
@@ -358,6 +358,7 @@ function createRaidOwnerCell(plan, owner, scope = "draft") {
     select.add(option);
   }
   select.addEventListener("change", () => {
+    showRaidSelectionWarning(plan, owner, select.value, raidPlans);
     if (scope === "saved") updateSavedRaidPlanCharacterLocal(plan.id, owner, select.value);
     else updateRaidPlanCharacter(plan.id, owner, select.value);
   });
@@ -916,35 +917,64 @@ function getRaidRecommendation(character) {
 
 function getRaidPlanCellStatus(plan, character, raidPlans = state.raidPlanDrafts) {
   const raidName = plan.raidName?.trim();
-  const recommended = getRecommendedRaids(character);
+  const normalizedRaidName = normalizeRaidNameForColor(raidName);
   const extra = getExtraRaids(character);
   const sameRaidCount = getRaidPlanRows(raidPlans).filter((row) => {
-    if (row.excluded || row.raidName !== raidName) return false;
+    if (row.excluded || normalizeRaidNameForColor(row.raidName) !== normalizedRaidName) return false;
     return Object.values(row.characters ?? {}).includes(character.key);
   }).length;
   return {
-    isExtra: extra.includes(raidName),
-    isExcluded: Boolean(plan.excluded) || (!!raidName && !recommended.includes(raidName) && !extra.includes(raidName)),
+    isExtra: raidListIncludes(extra, raidName),
+    isExcluded: Boolean(plan.excluded) || !canJoinRaid(character, raidName),
     isDuplicate: sameRaidCount > 1,
   };
 }
 
 function getRaidCharacterOptionStatus(plan, character, raidPlans) {
   const raidName = plan.raidName?.trim();
+  const normalizedRaidName = normalizeRaidNameForColor(raidName);
   const sameRaidCount = getRaidPlanRows(raidPlans).filter((row) => {
-    if (row.id === plan.id || row.excluded || row.raidName !== raidName) return false;
+    if (row.id === plan.id || row.excluded || normalizeRaidNameForColor(row.raidName) !== normalizedRaidName) return false;
     return Object.values(row.characters ?? {}).includes(character.key);
   }).length;
   return {
     isDuplicate: sameRaidCount > 0,
-    isExtra: getExtraRaids(character).includes(raidName),
+    isExtra: raidListIncludes(getExtraRaids(character), raidName),
   };
+}
+
+function showRaidSelectionWarning(plan, owner, characterKey, raidPlans) {
+  if (!characterKey) return;
+  const character = findCharacterByKey(characterKey);
+  if (!character) return;
+  const nextPlan = { ...plan, characters: { ...(plan.characters ?? {}), [owner]: characterKey } };
+  const optionStatus = getRaidCharacterOptionStatus(nextPlan, character, raidPlans);
+  if (optionStatus.isDuplicate) {
+    alert("이미 편성된 캐릭입니다.");
+    return;
+  }
+  const cellStatus = getRaidPlanCellStatus(nextPlan, character, raidPlans);
+  if (cellStatus.isExcluded) alert("현재 레이드와 레벨이 맞지 않습니다.");
 }
 
 function canJoinRaid(character, raidName) {
   if (!raidName) return true;
-  const recommendation = getRaidRecommendation(character);
-  return recommendation.primary.includes(raidName) || recommendation.extra.includes(raidName);
+  const raid = getRaidCatalogItem(raidName);
+  if (!raid) {
+    const recommendation = getRaidRecommendation(character);
+    return raidListIncludes(recommendation.primary, raidName) || raidListIncludes(recommendation.extra, raidName);
+  }
+  return Number(character?.itemLevelNumber ?? 0) >= raid.minLevel;
+}
+
+function getRaidCatalogItem(raidName) {
+  const normalizedRaidName = normalizeRaidNameForColor(raidName);
+  return raidCatalog.find((raid) => normalizeRaidNameForColor(raid.name) === normalizedRaidName);
+}
+
+function raidListIncludes(raidNames, raidName) {
+  const normalizedRaidName = normalizeRaidNameForColor(raidName);
+  return raidNames.some((item) => normalizeRaidNameForColor(item) === normalizedRaidName);
 }
 
 function getRaidTier(raidName) {

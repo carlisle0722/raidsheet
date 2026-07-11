@@ -905,7 +905,7 @@ h3:has(.owner-avatar) {
   font-weight: 600;
 }
 
-.raid-character-select option.is-duplicate-option {
+.raid-character-select option.is-danger-option {
   color: var(--danger);
 }
 
