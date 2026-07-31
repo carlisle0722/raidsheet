@@ -15,6 +15,7 @@ const storageKeys = {
   raidPlans: "raidsheet:raid-plans:v1",
   albumImages: "raidsheet:album-images:v1",
   memoNotes: "raidsheet:memo-notes:v1",
+  theme: "raidsheet:theme:v1",
 };
 
 const names = {
@@ -154,6 +155,7 @@ const elements = {
   memoContentInput: document.querySelector("#memo-content-input"),
   memoError: document.querySelector("#memo-error"),
   saveMemoButton: document.querySelector("#save-memo-button"),
+  themeToggleButton: document.querySelector("#theme-toggle-button"),
   tabButtons: [...document.querySelectorAll("[data-tab-target]")],
   tabPanels: [...document.querySelectorAll(".tab-panel")],
   ownerCount: document.querySelector("#owner-count"),
@@ -223,12 +225,31 @@ elements.resetMissingFilterButton?.addEventListener("click", () => {
 });
 elements.addMemoButton?.addEventListener("click", openMemoDialog);
 elements.saveMemoButton?.addEventListener("click", saveMemoFromDialog);
+elements.themeToggleButton?.addEventListener("click", toggleTheme);
 for (const button of elements.tabButtons) {
   button.addEventListener("click", () => activateTab(button.dataset.tabTarget));
 }
 
+initializeTheme();
 renderAll();
 initializeApp();
+
+function initializeTheme() {
+  const theme = localStorage.getItem(storageKeys.theme) === "dark" ? "dark" : "light";
+  applyTheme(theme);
+}
+
+function toggleTheme() {
+  const nextTheme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  localStorage.setItem(storageKeys.theme, nextTheme);
+  applyTheme(nextTheme);
+}
+
+function applyTheme(theme) {
+  const isDark = theme === "dark";
+  document.documentElement.dataset.theme = isDark ? "dark" : "light";
+  elements.themeToggleButton?.setAttribute("aria-checked", String(isDark));
+}
 
 async function initializeApp() {
   await loadSheetState();

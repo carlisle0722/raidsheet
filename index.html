@@ -4,6 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>레이드 시트</title>
+    <script>
+      (() => {
+        const theme = localStorage.getItem("raidsheet:theme:v1");
+        if (theme === "dark") document.documentElement.dataset.theme = "dark";
+      })();
+    </script>
     <link rel="stylesheet" href="/styles.css?v=20260531-18" />
   </head>
   <body>
@@ -14,6 +20,10 @@
           <h1>레이드 편성표</h1>
         </div>
         <div class="top-actions">
+          <button id="theme-toggle-button" class="theme-toggle" type="button" role="switch" aria-checked="false" aria-label="다크모드">
+            <span class="theme-toggle-track"><span class="theme-toggle-thumb"></span></span>
+            <span class="theme-toggle-text">Dark</span>
+          </button>
           <a class="secondary-button manual-download-button" href="/USER_MANUAL.pdf" download="레이드시트_사용자_매뉴얼.pdf">사용자 매뉴얼</a>
           <button id="edit-accounts-button" class="secondary-button" type="button">계정 편집</button>
           <button id="open-roster-button" class="secondary-button" type="button">캐릭터 편집</button>
