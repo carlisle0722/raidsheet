@@ -2586,6 +2586,25 @@ button.auction-result-row:hover {
   filter: drop-shadow(0 0 6px rgba(112, 183, 174, 0.72));
 }
 
+:root[data-theme="dark"] .raid-saved-table tbody tr {
+  --raid-row-bg: #151b21;
+}
+
+:root[data-theme="dark"] .raid-saved-table tbody tr.is-completed {
+  --raid-row-bg: rgba(104, 164, 223, 0.2);
+}
+
+:root[data-theme="dark"] .raid-saved-table tbody tr.is-selected {
+  --raid-row-bg: rgba(45, 212, 191, 0.13);
+}
+
+:root[data-theme="dark"] .raid-saved-table tbody tr td,
+:root[data-theme="dark"] .raid-saved-table tbody tr td[data-tier],
+:root[data-theme="dark"] .raid-saved-table tbody tr .raid-order-cell,
+:root[data-theme="dark"] .raid-saved-table tbody tr .raid-completed-cell {
+  background: var(--raid-row-bg) !important;
+}
+
 :root[data-theme="dark"] .album-preview-dialog::backdrop,
 :root[data-theme="dark"] .auction-calculator-dialog::backdrop {
   background: rgba(5, 8, 12, 0.72);
