@@ -266,7 +266,7 @@ async function loadRosters(options = {}) {
   state.isLoading = true;
   setRefreshButtonsDisabled(true);
   setCharacterLoadStatus(options.refresh ? "새로 조회 중" : "자동 조회 중", "loading");
-  renderRosterBoard(true);
+  if (!state.rosters.length) renderRosterBoard(true);
 
   try {
     const results = await Promise.all(state.accounts.map((account) => fetchAccountRoster(account, options)));
