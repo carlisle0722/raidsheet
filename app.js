@@ -1527,10 +1527,12 @@ function renderStatus() {
     return;
   }
   const total = getAllCharacters().length;
+  const ownedTotal = getAssignedCharacters().length;
+  const countText = ownedTotal === total ? `${total}명 조회` : `${ownedTotal}명 보유 · 조회 ${total}명`;
   const cachedCount = state.rosters.filter((roster) => roster.cached).length;
   const time = state.lastUpdatedAt?.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
   const cacheText = cachedCount ? ` · 캐시 ${cachedCount}건` : "";
-  setCharacterLoadStatus(`${time} 기준 ${minItemLevel}+ ${total}명 조회${cacheText}`, "success");
+  setCharacterLoadStatus(`${time} 기준 ${minItemLevel}+ ${countText}${cacheText}`, "success");
 }
 
 function setStatus(message, tone = "neutral") {

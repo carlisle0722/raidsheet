@@ -2586,6 +2586,16 @@ button.auction-result-row:hover {
   filter: drop-shadow(0 0 6px rgba(112, 183, 174, 0.72));
 }
 
+:root[data-theme="dark"] .site-toast-panel {
+  border-color: rgba(112, 183, 174, 0.48);
+  color: #edfdfb;
+  background: rgba(18, 27, 32, 0.96);
+  box-shadow:
+    0 18px 54px rgba(0, 0, 0, 0.44),
+    0 0 0 1px rgba(112, 183, 174, 0.14),
+    0 0 22px rgba(112, 183, 174, 0.14);
+}
+
 :root[data-theme="dark"] .raid-saved-table tbody tr {
   --raid-row-bg: #151b21;
 }
