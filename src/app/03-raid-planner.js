@@ -919,10 +919,21 @@ function getRaidRecommendation(character) {
   return raidRecommendations.find((item) => character.itemLevelNumber >= item.minLevel) ?? { primary: [], extra: [] };
 }
 
+function isRaidRosterValidationReady() {
+  return !state.isLoading && state.rosters.some((roster) => roster.ok);
+}
+
 function getRaidPlanCellStatus(plan, character, raidPlans = state.raidPlanDrafts) {
   const raidName = plan.raidName?.trim();
   const normalizedRaidName = normalizeRaidNameForColor(raidName);
   const extra = getExtraRaids(character);
+  if (!isRaidRosterValidationReady()) {
+    return {
+      isExtra: raidListIncludes(extra, raidName),
+      isExcluded: false,
+      isDuplicate: false,
+    };
+  }
   const sameRaidCount = getRaidPlanRows(raidPlans).filter((row) => {
     if (row.excluded || normalizeRaidNameForColor(row.raidName) !== normalizedRaidName) return false;
     return Object.values(row.characters ?? {}).includes(character.key);
@@ -937,6 +948,12 @@ function getRaidPlanCellStatus(plan, character, raidPlans = state.raidPlanDrafts
 function getRaidCharacterOptionStatus(plan, character, raidPlans) {
   const raidName = plan.raidName?.trim();
   const normalizedRaidName = normalizeRaidNameForColor(raidName);
+  if (!isRaidRosterValidationReady()) {
+    return {
+      isDuplicate: false,
+      isExtra: raidListIncludes(getExtraRaids(character), raidName),
+    };
+  }
   const sameRaidCount = getRaidPlanRows(raidPlans).filter((row) => {
     if (row.id === plan.id || row.excluded || normalizeRaidNameForColor(row.raidName) !== normalizedRaidName) return false;
     return Object.values(row.characters ?? {}).includes(character.key);
