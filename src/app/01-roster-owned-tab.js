@@ -68,6 +68,7 @@ function renderAssignmentBoard() {
     const assigned = state.assignments
       .filter((assignment) => assignment.owner === owner)
       .map((assignment) => charactersByKey.get(assignment.key) ?? assignment.character)
+      .filter(isDisplayableCharacter)
       .filter(Boolean)
       .sort(compareCharacters);
 
@@ -155,6 +156,7 @@ function renderAssignedRosterBoard() {
     const assigned = state.assignments
       .filter((assignment) => assignment.owner === owner)
       .map((assignment) => charactersByKey.get(assignment.key) ?? assignment.character)
+      .filter(isDisplayableCharacter)
       .filter(Boolean)
       .sort(compareCharacters);
 

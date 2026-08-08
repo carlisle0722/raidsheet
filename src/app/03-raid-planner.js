@@ -891,6 +891,7 @@ function getAssignedCharacters() {
   const charactersByKey = new Map(getAllCharacters().map((character) => [character.key, character]));
   return state.assignments
     .map((assignment) => charactersByKey.get(assignment.key) ?? assignment.character)
+    .filter(isDisplayableCharacter)
     .filter(Boolean);
 }
 
@@ -899,8 +900,13 @@ function getCharactersForOwner(owner) {
   return state.assignments
     .filter((assignment) => assignment.owner === owner)
     .map((assignment) => charactersByKey.get(assignment.key) ?? assignment.character)
+    .filter(isDisplayableCharacter)
     .filter(Boolean)
     .sort(compareCharacters);
+}
+
+function isDisplayableCharacter(character) {
+  return Boolean(character) && Number(character.itemLevelNumber ?? 0) >= minItemLevel;
 }
 
 function findCharacterByKey(key) {
