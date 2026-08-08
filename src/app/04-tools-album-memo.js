@@ -105,11 +105,11 @@ function characterKey(character) {
 }
 
 function getLevelTier(level) {
-  if (level >= 1750) return "ancient";
-  if (level >= 1740) return "red";
-  if (level >= 1730) return "green";
-  if (level >= 1720) return "blue";
-  if (level >= 1710) return "low";
+  if (level >= 1780) return "ancient";
+  if (level >= 1770) return "red";
+  if (level >= 1750) return "green";
+  if (level >= 1740) return "blue";
+  if (level >= 1730) return "low";
   return "base";
 }
 

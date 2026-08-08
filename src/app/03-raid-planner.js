@@ -991,6 +991,12 @@ function normalizeRaidNameForColor(raidName) {
   const source = String(raidName || "").trim();
   const compact = source.replace(/\s+/g, "");
   const aliasMap = new Map([
+    ["벨나", "벨가 나메"],
+    ["벨가나메", "벨가 나메"],
+    ["벨하", "벨가 하드"],
+    ["벨가하드", "벨가 하드"],
+    ["벨노", "벨가 노말"],
+    ["벨가노말", "벨가 노말"],
     ["4노", "4막 노말"],
     ["4막노말", "4막 노말"],
     ["4하", "4막 하드"],

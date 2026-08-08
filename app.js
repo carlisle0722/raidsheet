@@ -1,5 +1,5 @@
 // 상수, 상태, DOM 요소, 이벤트 연결, 초기 로딩
-const minItemLevel = 1700;
+const minItemLevel = 1720;
 const maxAlbumImages = 14;
 const maxUploadImageBytes = 4 * 1024 * 1024;
 const albumGridSlots = maxAlbumImages + 1;
@@ -43,27 +43,30 @@ const defaultAccounts = [
 ];
 const ownerOptions = defaultAccounts.map((account) => account.owner);
 const raidCatalog = [
+  { id: "belga-nm", name: "벨가 나메", minLevel: 1780, tier: "ancient" },
+  { id: "belga-hard", name: "벨가 하드", minLevel: 1770, tier: "red" },
+  { id: "belga-normal", name: "벨가 노말", minLevel: 1750, tier: "green" },
+  { id: "cathedral-3", name: "성당 3단계", minLevel: 1740, tier: "red" },
   { id: "serka-nm", name: "세르카 나메", minLevel: 1740, tier: "red" },
   { id: "serka-hard", name: "세르카 하드", minLevel: 1730, tier: "green" },
-  { id: "serka-normal", name: "세르카 노말", minLevel: 1710, tier: "low" },
   { id: "jongha", name: "종막 하드", minLevel: 1730, tier: "green" },
-  { id: "jongno", name: "종막 노말", minLevel: 1710, tier: "low" },
-  { id: "cathedral-3", name: "성당 3단계", minLevel: 1740, tier: "red" },
-  { id: "cathedral-2", name: "성당 2단계", minLevel: 1720, tier: "blue" },
-  { id: "cathedral-1", name: "성당 1단계", minLevel: 1700, tier: "base" },
   { id: "act4-hard", name: "4막 하드", minLevel: 1720, tier: "blue" },
-  { id: "act4-normal", name: "4막 노말", minLevel: 1700, tier: "base" },
-  { id: "act3-hard", name: "3막 하드", minLevel: 1700, tier: "base" },
+  { id: "cathedral-2", name: "성당 2단계", minLevel: 1720, tier: "blue" },
+  { id: "jongno", name: "종막 노말", minLevel: 1720, tier: "low" },
+  { id: "serka-normal", name: "세르카 노말", minLevel: 1720, tier: "low" },
 ];
 const raidRecommendations = [
-  { minLevel: 1750, primary: ["세르카 나메", "종막 하드", "성당 3단계"], extra: ["4막 하드"] },
+  { minLevel: 1780, primary: ["벨가 나메", "세르카 나메", "성당 3단계"], extra: ["종막 하드"] },
+  { minLevel: 1770, primary: ["벨가 하드", "세르카 나메", "성당 3단계"], extra: ["종막 하드"] },
+  { minLevel: 1750, primary: ["벨가 노말", "세르카 나메", "성당 3단계"], extra: ["종막 하드"] },
   { minLevel: 1740, primary: ["세르카 나메", "종막 하드", "4막 하드"], extra: ["성당 2단계"] },
   { minLevel: 1730, primary: ["세르카 하드", "종막 하드", "4막 하드"], extra: ["성당 2단계"] },
   { minLevel: 1720, primary: ["4막 하드", "성당 2단계", "종막 노말"], extra: ["세르카 노말"] },
-  { minLevel: 1710, primary: ["세르카 노말", "종막 노말", "4막 노말"], extra: ["성당 1단계"] },
-  { minLevel: 1700, primary: ["4막 노말", "성당 1단계", "3막 하드"], extra: [] },
 ];
 const raidFilterOrder = [
+  "벨가 나메",
+  "벨가 하드",
+  "벨가 노말",
   "성당 3단계",
   "세르카 나메",
   "세르카 하드",
@@ -72,7 +75,6 @@ const raidFilterOrder = [
   "성당 2단계",
   "종막 노말",
   "세르카 노말",
-  "3막 하드",
 ];
 
 const state = {
@@ -1660,6 +1662,12 @@ function normalizeRaidNameForColor(raidName) {
   const source = String(raidName || "").trim();
   const compact = source.replace(/\s+/g, "");
   const aliasMap = new Map([
+    ["벨나", "벨가 나메"],
+    ["벨가나메", "벨가 나메"],
+    ["벨하", "벨가 하드"],
+    ["벨가하드", "벨가 하드"],
+    ["벨노", "벨가 노말"],
+    ["벨가노말", "벨가 노말"],
     ["4노", "4막 노말"],
     ["4막노말", "4막 노말"],
     ["4하", "4막 하드"],
@@ -1933,11 +1941,11 @@ function characterKey(character) {
 }
 
 function getLevelTier(level) {
-  if (level >= 1750) return "ancient";
-  if (level >= 1740) return "red";
-  if (level >= 1730) return "green";
-  if (level >= 1720) return "blue";
-  if (level >= 1710) return "low";
+  if (level >= 1780) return "ancient";
+  if (level >= 1770) return "red";
+  if (level >= 1750) return "green";
+  if (level >= 1740) return "blue";
+  if (level >= 1730) return "low";
   return "base";
 }
 
