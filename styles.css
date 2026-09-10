@@ -176,10 +176,7 @@ button:disabled {
 
 .sandae-birthday-sticker {
   position: absolute;
-  right: clamp(14px, 3vw, 38px);
-  bottom: clamp(8px, 1.5vw, 18px);
   z-index: 2;
-  width: clamp(88px, 11vw, 142px);
   aspect-ratio: 1;
   border: 2px solid rgba(255, 255, 255, 0.7);
   border-radius: 24px;
@@ -189,6 +186,19 @@ button:disabled {
     0 0 28px rgba(255, 255, 255, 0.42);
   object-fit: contain;
   padding: 4px;
+}
+
+.sandae-birthday-sticker-left {
+  left: clamp(14px, 3vw, 38px);
+  bottom: clamp(8px, 1.5vw, 18px);
+  width: clamp(82px, 10vw, 132px);
+  transform: rotate(-5deg);
+}
+
+.sandae-birthday-sticker-right {
+  right: clamp(14px, 3vw, 38px);
+  bottom: clamp(8px, 1.5vw, 18px);
+  width: clamp(96px, 12vw, 158px);
   transform: rotate(4deg);
 }
 
@@ -2729,11 +2739,19 @@ button.auction-result-row:hover {
   }
 
   .sandae-birthday-sticker {
-    right: 10px;
     bottom: 8px;
-    width: 78px;
     border-radius: 18px;
-    opacity: 0.82;
+    opacity: 0.78;
+  }
+
+  .sandae-birthday-sticker-left {
+    left: 8px;
+    width: 66px;
+  }
+
+  .sandae-birthday-sticker-right {
+    right: 8px;
+    width: 72px;
   }
 
   .sandae-birthday-banner h2 {
