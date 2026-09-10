@@ -136,43 +136,6 @@ button:disabled {
   animation: sandae-pulse 3.8s ease-in-out infinite;
 }
 
-.sandae-birthday-orbit {
-  position: absolute;
-  top: 50%;
-  right: clamp(18px, 6vw, 88px);
-  width: clamp(120px, 16vw, 210px);
-  aspect-ratio: 1;
-  border: 2px solid rgba(255, 255, 255, 0.74);
-  border-radius: 999px;
-  transform: translateY(-50%);
-  box-shadow:
-    0 0 0 12px rgba(255, 255, 255, 0.12),
-    0 0 42px rgba(255, 255, 255, 0.48);
-  opacity: 0.82;
-}
-
-.sandae-birthday-orbit::before,
-.sandae-birthday-orbit::after {
-  content: "";
-  position: absolute;
-  border-radius: inherit;
-}
-
-.sandae-birthday-orbit::before {
-  inset: 18%;
-  border: 2px dashed rgba(255, 255, 255, 0.82);
-  animation: sandae-spin 14s linear infinite;
-}
-
-.sandae-birthday-orbit::after {
-  inset: 38%;
-  background: rgba(255, 255, 255, 0.84);
-  box-shadow:
-    0 0 24px rgba(255, 255, 255, 0.9),
-    42px -28px 0 -12px rgba(255, 255, 255, 0.72),
-    -48px 24px 0 -14px rgba(255, 255, 255, 0.7);
-}
-
 .sandae-birthday-content {
   position: relative;
   display: grid;
@@ -180,6 +143,7 @@ button:disabled {
   min-height: 164px;
   padding: 26px clamp(20px, 4vw, 42px);
   align-content: center;
+  justify-items: start;
 }
 
 .sandae-birthday-date {
@@ -197,10 +161,11 @@ button:disabled {
 }
 
 .sandae-birthday-banner h2 {
-  max-width: min(820px, calc(100% - 170px));
+  max-width: 100%;
   color: #fff;
-  font-size: clamp(2.15rem, 5.2vw, 5rem);
+  font-size: clamp(2.25rem, 4.6vw, 4.7rem);
   line-height: 1;
+  white-space: nowrap;
   text-shadow:
     0 3px 0 rgba(22, 27, 36, 0.3),
     0 0 22px rgba(255, 255, 255, 0.72),
@@ -217,12 +182,6 @@ button:disabled {
   50% {
     opacity: 0.84;
     transform: scaleX(1.04);
-  }
-}
-
-@keyframes sandae-spin {
-  to {
-    transform: rotate(360deg);
   }
 }
 
@@ -2749,21 +2708,15 @@ button.auction-result-row:hover {
     padding: 22px 18px;
   }
 
-  .sandae-birthday-orbit {
-    right: -42px;
-    width: 138px;
-    opacity: 0.46;
-  }
-
   .sandae-birthday-banner h2 {
     max-width: 100%;
     font-size: clamp(2rem, 11vw, 3.1rem);
+    white-space: normal;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sandae-birthday-banner::after,
-  .sandae-birthday-orbit::before {
+  .sandae-birthday-banner::after {
     animation: none;
   }
 }
